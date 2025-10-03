@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Onboarding{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-cog me-2"></i>Admin Onboarding</h4>
+                <p class="text-muted mb-0">Configure system settings for the first time</p>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.timer_duration.label(class="form-label") }}
+                        {{ form.timer_duration(class="form-control", placeholder="Enter timer duration in seconds") }}
+                        {% if form.timer_duration.errors %}
+                        <div class="text-danger">
+                            {% for error in form.timer_duration.errors %}
+                            <small>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.sender_email.label(class="form-label") }}
+                        {{ form.sender_email(class="form-control", placeholder="sender@gmail.com") }}
+                        {% if form.sender_email.errors %}
+                        <div class="text-danger">
+                            {% for error in form.sender_email.errors %}
+                            <small>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.app_password.label(class="form-label") }}
+                        {{ form.app_password(class="form-control", placeholder="Gmail App Password") }}
+                        <div class="form-text">
+                            You need to create an App Password in your Google Account settings
+                        </div>
+                        {% if form.app_password.errors %}
+                        <div class="text-danger">
+                            {% for error in form.app_password.errors %}
+                            <small>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.recipient_emails.label(class="form-label") }}
+                        {{ form.recipient_emails(class="form-control", placeholder="recipient1@example.com,recipient2@example.com") }}
+                        <div class="form-text">
+                            Comma-separated list of email addresses to notify
+                        </div>
+                        {% if form.recipient_emails.errors %}
+                        <div class="text-danger">
+                            {% for error in form.recipient_emails.errors %}
+                            <small>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Save Configuration
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,140 @@
+<!-- Report Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-file-alt me-2"></i>Generate Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="report-form">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="start-date" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="start-date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="end-date" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="end-date" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Event Types</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="event-door-open" value="door_open" checked>
+                            <label class="form-check-label" for="event-door-open">Door Open</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="event-door-close" value="door_close" checked>
+                            <label class="form-check-label" for="event-door-close">Door Close</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="event-alarm" value="alarm_triggered" checked>
+                            <label class="form-check-label" for="event-alarm">Alarm Triggered</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="event-settings" value="setting_changed" checked>
+                            <label class="form-check-label" for="event-settings">Settings Changed</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Format</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="format" id="format-csv" value="csv" checked>
+                            <label class="form-check-label" for="format-csv">CSV</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="format" id="format-pdf" value="pdf">
+                            <label class="form-check-label" for="format-pdf">PDF</label>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-primary" id="generate-report">Generate Report</button>
+                </form>
+                
+                <div id="report-result" class="mt-3 d-none">
+                    <h6>Report Preview</h6>
+                    <div id="report-content"></div>
+                    <div class="mt-3">
+                        <button class="btn btn-success" id="download-report">Download Report</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('generate-report').addEventListener('click', function() {
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
+    const eventTypes = [];
+    if(document.getElementById('event-door-open').checked) eventTypes.push('door_open');
+    if(document.getElementById('event-door-close').checked) eventTypes.push('door_close');
+    if(document.getElementById('event-alarm').checked) eventTypes.push('alarm_triggered');
+    if(document.getElementById('event-settings').checked) eventTypes.push('setting_changed');
+    const format = document.querySelector('input[name="format"]:checked').value;
+    
+    if(!startDate || !endDate) {
+        alert('Please select both start and end dates');
+        return;
+    }
+    
+    fetch('/api/report', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            start_date: startDate,
+            end_date: endDate,
+            event_types: eventTypes,
+            format: format
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const resultDiv = document.getElementById('report-result');
+        const contentDiv = document.getElementById('report-content');
+        
+        if(format === 'csv') {
+            contentDiv.innerHTML = '<pre>' + data.csv_data + '</pre>';
+        } else {
+            // For PDF, we'll show a table preview
+            let tableHtml = '<table class="table table-striped"><thead><tr><th>ID</th><th>Event</th><th>Description</th><th>Timestamp</th></tr></thead><tbody>';
+            data.events.forEach(event => {
+                tableHtml += `<tr>
+                    <td>${event.id}</td>
+                    <td>${event.event_type.replace('_', ' ')}</td>
+                    <td>${event.description}</td>
+                    <td>${event.timestamp}</td>
+                </tr>`;
+            });
+            tableHtml += '</tbody></table>';
+            contentDiv.innerHTML = tableHtml;
+        }
+        
+        resultDiv.classList.remove('d-none');
+        
+        // Setup download
+        document.getElementById('download-report').onclick = function() {
+            if(format === 'csv') {
+                const blob = new Blob([data.csv_data], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `door_alarm_report_${startDate}_to_${endDate}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } else {
+                // In a real implementation, this would generate a PDF
+                alert('PDF generation would be implemented here');
+            }
+        };
+    });
+});
+</script>

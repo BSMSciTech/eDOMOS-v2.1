@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="U                <ul class="navbar-nav">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eDomos - {% block title %}{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary professional-nav">
+        <div class="container-fluid">
+            <a class="navbar-brand professional-brand" href="{{ url_for('dashboard') }}">
+                <div class="brand-logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 2C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V4C20 2.89543 19.1046 2 18 2H6Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M9 22V12H15V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 2V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="15.5" cy="8.5" r="1" fill="currentColor"/>
+                        <path d="M8 8H10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M8 6H10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <span class="brand-main">eDomos</span>
+                </div>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto d-flex justify-content-start">
+                    {% if 'dashboard' in permissions %}
+                    <li class="nav-item mx-2">
+                        <a class="nav-link nav-link-vertical" href="{{ url_for('dashboard') }}">
+                            <i class="fas fa-home nav-icon"></i>
+                            <span class="nav-text">Dashboard</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if 'event_log' in permissions %}
+                    <li class="nav-item mx-2">
+                        <a class="nav-link nav-link-vertical" href="{{ url_for('event_log') }}">
+                            <i class="fas fa-list nav-icon"></i>
+                            <span class="nav-text">Event Log</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if 'report' in permissions %}
+                    <li class="nav-item mx-2">
+                        <a class="nav-link nav-link-vertical" href="{{ url_for('reports') }}">
+                            <i class="fas fa-file-alt nav-icon"></i>
+                            <span class="nav-text">Reports</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if 'analytics' in permissions %}
+                    <li class="nav-item mx-2">
+                        <a class="nav-link nav-link-vertical" href="{{ url_for('analytics') }}">
+                            <i class="fas fa-chart-bar nav-icon"></i>
+                            <span class="nav-text">Analytics</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if current_user.is_admin or 'admin' in permissions %}
+                    <li class="nav-item mx-2">
+                        <a class="nav-link nav-link-vertical" href="{{ url_for('admin_panel') }}">
+                            <i class="fas fa-user-shield nav-icon"></i>
+                            <span class="nav-text">Admin</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item me-3">
+                        <div class="system-health-indicator">
+                            <div class="health-status" id="systemHealth">
+                                <div class="health-dot online"></div>
+                                <span class="health-text">Live Monitoring Active</span>
+                            </div>
+                        </div>
+                    </li>
+                    <li class="nav-item me-2">
+                        <div class="auto-refresh-controls">
+                            <button class="btn btn-outline-light btn-sm" id="autoRefreshBtn" onclick="toggleAutoRefresh()" title="Toggle Auto-Refresh">
+                                <i class="fas fa-play"></i> Auto-Refresh: OFF
+                            </button>
+                            <select class="form-select form-select-sm" id="refreshIntervalSelect" onchange="setRefreshInterval(this.value)" title="Refresh Interval">
+                                <option value="1">1s</option>
+                                <option value="5">5s</option>
+                                <option value="10">10s</option>
+                                <option value="30" selected>30s</option>
+                                <option value="60">1m</option>
+                                <option value="120">2m</option>
+                                <option value="300">5m</option>
+                            </select>
+                        </div>
+                    </li>
+                    <li class="nav-item me-3">
+                        <button class="btn btn-outline-light btn-sm theme-toggle-btn" id="themeToggle" onclick="toggleTheme()">
+                            <i class="fas fa-sun" id="themeIcon"></i>
+                        </button>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user"></i> {{ current_user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+    
+    <main class="container-fluid mt-4">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            {{ messages[0] }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Professional Footer -->
+    {% if current_user.is_authenticated %}
+    <footer class="professional-footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="footer-brand-text">
+                        <span class="footer-company">BSM Science & Technology Solutions</span>
+                        <span class="footer-tagline">Advanced Security Systems</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-section">
+                <h6 class="footer-title">System Status</h6>
+                <div class="footer-status">
+                    <div class="status-item">
+                        <i class="fas fa-circle status-online"></i>
+                        <span>Live Monitoring Active</span>
+                    </div>
+                    <div class="status-item">
+                        <i class="fas fa-shield-check status-secure"></i>
+                        <span>Security Active</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-section">
+                <h6 class="footer-title">Quick Links</h6>
+                <div class="footer-links">
+                    <a href="{{ url_for('dashboard') }}"><i class="fas fa-home"></i> Dashboard</a>
+                    <a href="{{ url_for('event_log') }}"><i class="fas fa-list"></i> Event Log</a>
+                    <a href="{{ url_for('reports') }}"><i class="fas fa-file-alt"></i> Reports</a>
+                </div>
+            </div>
+            
+            <div class="footer-section">
+                <h6 class="footer-title">System Info</h6>
+                <div class="footer-info">
+                    <div class="info-item">
+                        <span class="info-label">Version:</span>
+                        <span class="info-value">v2.0</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Uptime:</span>
+                        <span class="info-value" id="system-uptime">24/7</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">User:</span>
+                        <span class="info-value">{{ current_user.username }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-bottom">
+            <div class="footer-bottom-content">
+                <p>&copy; 2024 BSM Science & Technology Solutions. All rights reserved.</p>
+                <div class="footer-tech">
+                    <span>Powered by Flask & Bootstrap</span>
+                    <span class="separator">•</span>
+                    <span>Secured with HTTPS</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+    {% endif %}
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/socket.js') }}"></script>
+    
+    <script>
+        // Theme toggle functionality
+        function toggleTheme() {
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+        }
+        
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            document.body.setAttribute('data-theme', theme);
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (theme === 'dark') {
+                themeIcon.className = 'fas fa-moon';
+                themeIcon.parentElement.innerHTML = '<i class="fas fa-moon"></i>';
+            } else {
+                themeIcon.className = 'fas fa-sun';
+                themeIcon.parentElement.innerHTML = '<i class="fas fa-sun"></i>';
+            }
+        }
+        
+        // Auto-refresh functionality
+        let autoRefreshInterval = null;
+        let autoRefreshEnabled = localStorage.getItem('autoRefresh') !== 'false'; // Default to enabled
+        let refreshIntervalSeconds = parseInt(localStorage.getItem('refreshInterval')) || 30; // Default 30 seconds
+        
+        function startAutoRefresh() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            
+            if (autoRefreshEnabled) {
+                console.log(`🔄 Auto-refresh enabled: ${refreshIntervalSeconds}s interval`);
+                startCountdown();
+                
+                autoRefreshInterval = setInterval(() => {
+                    console.log('🔄 Auto-refreshing page...');
+                    // Smooth page refresh with loading indicator
+                    showAutoRefreshIndicator();
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+                }, refreshIntervalSeconds * 1000);
+            }
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+                console.log('⏹️ Auto-refresh stopped');
+            }
+        }
+        
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            localStorage.setItem('autoRefresh', autoRefreshEnabled);
+            
+            if (autoRefreshEnabled) {
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
+                if (countdownInterval) clearInterval(countdownInterval);
+            }
+            
+            updateAutoRefreshUI();
+            updateCountdownDisplay();
+        }
+        
+        function setRefreshInterval(seconds) {
+            refreshIntervalSeconds = parseInt(seconds);
+            localStorage.setItem('refreshInterval', seconds);
+            if (autoRefreshEnabled) {
+                startAutoRefresh(); // Restart with new interval
+            }
+            updateAutoRefreshUI();
+            if (refreshIntervalSeconds === 1) {
+                showNotification('Warning: 1s auto-refresh may cause high CPU/network usage and flicker.', 'warning', 5000);
+            }
+        }
+        
+        function updateAutoRefreshUI() {
+            const autoRefreshBtn = document.getElementById('autoRefreshBtn');
+            const refreshIntervalSelect = document.getElementById('refreshIntervalSelect');
+            
+            if (autoRefreshBtn) {
+                if (autoRefreshEnabled) {
+                    autoRefreshBtn.innerHTML = '<i class="fas fa-pause"></i> Auto-Refresh: ON';
+                    autoRefreshBtn.className = 'btn btn-success btn-sm';
+                } else {
+                    autoRefreshBtn.innerHTML = '<i class="fas fa-play"></i> Auto-Refresh: OFF';
+                    autoRefreshBtn.className = 'btn btn-outline-secondary btn-sm';
+                }
+            }
+            
+            if (refreshIntervalSelect) {
+                refreshIntervalSelect.value = refreshIntervalSeconds;
+            }
+        }
+        
+        // Countdown timer for auto-refresh
+        let countdownInterval = null;
+        let countdownSeconds = 0;
+        
+        function startCountdown() {
+            if (countdownInterval) clearInterval(countdownInterval);
+            if (!autoRefreshEnabled) return;
+            
+            countdownSeconds = refreshIntervalSeconds;
+            updateCountdownDisplay();
+            
+            countdownInterval = setInterval(() => {
+                countdownSeconds--;
+                updateCountdownDisplay();
+                
+                if (countdownSeconds <= 0) {
+                    clearInterval(countdownInterval);
+                    countdownSeconds = refreshIntervalSeconds;
+                }
+            }, 1000);
+        }
+        
+        function updateCountdownDisplay() {
+            const countdownElement = document.getElementById('refresh-countdown');
+            if (countdownElement) {
+                if (autoRefreshEnabled) {
+                    const minutes = Math.floor(countdownSeconds / 60);
+                    const seconds = countdownSeconds % 60;
+                    const display = minutes > 0 ? `${minutes}:${seconds.toString().padStart(2, '0')}` : `${seconds}s`;
+                    countdownElement.textContent = display;
+                    countdownElement.className = countdownSeconds <= 10 ? 'badge bg-warning' : 'badge bg-info';
+                } else {
+                    countdownElement.textContent = 'OFF';
+                    countdownElement.className = 'badge bg-secondary';
+                }
+            }
+        }
+        
+        function showAutoRefreshIndicator() {
+            const indicator = document.createElement('div');
+            indicator.id = 'autoRefreshIndicator';
+            indicator.innerHTML = `
+                <div class="position-fixed top-0 start-50 translate-middle-x bg-primary text-white px-3 py-2 rounded-bottom shadow" style="z-index: 9999;">
+                    <i class="fas fa-sync fa-spin me-2"></i>Auto-refreshing...
+                </div>
+            `;
+            document.body.appendChild(indicator);
+            
+            setTimeout(() => {
+                const elem = document.getElementById('autoRefreshIndicator');
+                if (elem) elem.remove();
+            }, 3000);
+        }
+        
+        function manualRefresh() {
+            const btn = event.target.closest('button');
+            const originalContent = btn.innerHTML;
+            
+            // Show loading state
+            btn.innerHTML = '<i class="fas fa-sync fa-spin"></i>';
+            btn.disabled = true;
+            
+            // Reset countdown and refresh
+            if (autoRefreshEnabled) {
+                countdownSeconds = refreshIntervalSeconds;
+                startCountdown();
+            }
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 300);
+        }
+        
+        // Enhanced notification system
+        function showNotification(message, type = 'info', duration = 3000) {
+            const toastContainer = document.getElementById('toast-container') || createToastContainer();
+            
+            const typeColors = {
+                'success': 'bg-success',
+                'error': 'bg-danger',
+                'warning': 'bg-warning',
+                'info': 'bg-info'
+            };
+            
+            const typeIcons = {
+                'success': 'fas fa-check-circle',
+                'error': 'fas fa-exclamation-circle',
+                'warning': 'fas fa-exclamation-triangle',
+                'info': 'fas fa-info-circle'
+            };
+            
+            const toastHtml = `
+                <div class="toast align-items-center text-white ${typeColors[type]} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="${typeIcons[type]} me-2"></i>${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            const toastElement = toastContainer.lastElementChild;
+            
+            if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
+                const toast = new bootstrap.Toast(toastElement, { delay: duration });
+                toast.show();
+                
+                toastElement.addEventListener('hidden.bs.toast', () => {
+                    toastElement.remove();
+                });
+            } else {
+                setTimeout(() => toastElement.remove(), duration);
+            }
+        }
+        
+        function createToastContainer() {
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container position-fixed top-0 end-0 p-3';
+            container.style.zIndex = '9999';
+            document.body.appendChild(container);
+            return container;
+        }
+        
+        // Enhanced page visibility handling
+        let pageVisibilityTimeStart = Date.now();
+        
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                pageVisibilityTimeStart = Date.now();
+                console.log('🔍 Page hidden, pausing auto-refresh');
+                if (countdownInterval) {
+                    clearInterval(countdownInterval);
+                }
+            } else {
+                const timeHidden = Date.now() - pageVisibilityTimeStart;
+                console.log(`👁️ Page visible again after ${Math.round(timeHidden/1000)}s`);
+                
+                // If page was hidden for longer than refresh interval, refresh immediately
+                if (autoRefreshEnabled && timeHidden > refreshIntervalSeconds * 1000) {
+                    console.log('🔄 Page was hidden too long, refreshing immediately');
+                    showNotification('Refreshing data after being away...', 'info', 2000);
+                    setTimeout(() => window.location.reload(), 1000);
+                } else if (autoRefreshEnabled) {
+                    // Resume countdown
+                    const remainingTime = Math.max(1, countdownSeconds - Math.floor(timeHidden/1000));
+                    countdownSeconds = remainingTime;
+                    startCountdown();
+                }
+            }
+        });
+
+        // Initialize theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Force default to light theme if no preference is saved
+            let savedTheme = localStorage.getItem('theme');
+            if (!savedTheme) {
+                savedTheme = 'light';
+                localStorage.setItem('theme', 'light');
+            }
+            applyTheme(savedTheme);
+            
+            // Initialize auto-refresh
+            updateAutoRefreshUI();
+            updateCountdownDisplay();
+            if (autoRefreshEnabled) {
+                startAutoRefresh();
+            }
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

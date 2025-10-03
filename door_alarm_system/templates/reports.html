@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-file-alt me-2"></i>Reports</h2>
+            <p class="text-muted">Generate custom reports for door alarm events</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-download me-2"></i>Generate Report</h5>
+                </div>
+                <div class="card-body">
+                    <form id="reportForm">
+                        <div class="mb-3">
+                            <label for="startDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="startDate" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="endDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="endDate" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Event Types</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="door_open" id="evtDoorOpen" checked>
+                                <label class="form-check-label" for="evtDoorOpen">Door Open</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="door_close" id="evtDoorClose" checked>
+                                <label class="form-check-label" for="evtDoorClose">Door Close</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="alarm_triggered" id="evtAlarm" checked>
+                                <label class="form-check-label" for="evtAlarm">Alarm Triggered</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Format</label>
+                            <select class="form-select" id="reportFormat">
+                                <option value="csv">CSV</option>
+                                <option value="json">JSON</option>
+                                <option value="pdf">PDF</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-file-download me-2"></i>Generate Report
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('reportForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const eventTypes = [];
+    if (document.getElementById('evtDoorOpen').checked) eventTypes.push('door_open');
+    if (document.getElementById('evtDoorClose').checked) eventTypes.push('door_close');
+    if (document.getElementById('evtAlarm').checked) eventTypes.push('alarm_triggered');
+    
+    const data = {
+        start_date: document.getElementById('startDate').value,
+        end_date: document.getElementById('endDate').value,
+        event_types: eventTypes,
+        format: document.getElementById('reportFormat').value
+    };
+    
+    fetch('/api/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.csv_data) {
+            const blob = new Blob([data.csv_data], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'door_alarm_report.csv';
+            a.click();
+        } else if (data.pdf_data) {
+            const binaryString = atob(data.pdf_data);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            const blob = new Blob([bytes], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'door_alarm_report.pdf';
+            a.click();
+        } else if (data.events) {
+            const blob = new Blob([JSON.stringify(data.events, null, 2)], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'door_alarm_report.json';
+            a.click();
+        }
+    })
+    .catch(error => alert('Error generating report: ' + error));
+});
+</script>
+{% endblock %}

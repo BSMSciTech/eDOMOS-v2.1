@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-user-shield me-2"></i>Admin Panel</h2>
+            <p class="text-muted">Manage users, permissions, and system settings</p>
+        </div>
+    </div>
+
+    <!-- Create New User Section -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-plus me-2"></i>Create New User</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('create_user') }}">
+                        {{ create_form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ create_form.username.label(class="form-label") }}
+                            {{ create_form.username(class="form-control") }}
+                            {% if create_form.username.errors %}
+                                <div class="text-danger">{{ create_form.username.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ create_form.password.label(class="form-label") }}
+                            {{ create_form.password(class="form-control") }}
+                            {% if create_form.password.errors %}
+                                <div class="text-danger">{{ create_form.password.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            {{ create_form.is_admin(class="form-check-input") }}
+                            {{ create_form.is_admin.label(class="form-check-label") }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-key me-2"></i>User Permissions
+                            </label>
+                            <div class="permissions-grid">
+                                {% for choice in create_form.permissions %}
+                                <div class="permission-item">
+                                    <div class="form-check">
+                                        {{ choice(class="form-check-input") }}
+                                        {{ choice.label(class="form-check-label") }}
+                                    </div>
+                                    <small class="text-muted d-block mt-1">
+                                        {% if choice.data == 'dashboard' %}Access to main dashboard
+                                        {% elif choice.data == 'controls' %}System control functions
+                                        {% elif choice.data == 'event_log' %}View event history
+                                        {% elif choice.data == 'report' %}Generate reports
+                                        {% elif choice.data == 'analytics' %}View analytics data
+                                        {% elif choice.data == 'admin' %}Full admin access
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if create_form.permissions.errors %}
+                                <div class="alert alert-danger mt-2">{{ create_form.permissions.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Create User
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Settings -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-cog me-2"></i>System Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('admin_settings') }}">
+                        {{ settings_form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ settings_form.timer_duration.label(class="form-label") }}
+                            {{ settings_form.timer_duration(class="form-control") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ settings_form.sender_email.label(class="form-label") }}
+                            {{ settings_form.sender_email(class="form-control") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ settings_form.app_password.label(class="form-label") }}
+                            {{ settings_form.app_password(class="form-control") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ settings_form.recipient_emails.label(class="form-label") }}
+                            {{ settings_form.recipient_emails(class="form-control") }}
+                        </div>
+
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save me-2"></i>Save Settings
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Existing Users Management -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Manage Users</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Username</th>
+                                    <th>Admin</th>
+                                    <th>Permissions</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user.id }}</td>
+                                    <td>{{ user.username }}</td>
+                                    <td>
+                                        {% if user.is_admin %}
+                                        <span class="badge bg-danger">Admin</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">User</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if user.permissions %}
+                                            {% for perm in user.permissions.split(',') %}
+                                            <span class="badge bg-info me-1">{{ perm }}</span>
+                                            {% endfor %}
+                                        {% else %}
+                                        <span class="text-muted">No permissions</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary edit-user-btn" 
+                                                data-user-id="{{ user.id }}" 
+                                                data-username="{{ user.username }}" 
+                                                data-is-admin="{{ user.is_admin }}" 
+                                                data-permissions="{{ user.permissions }}">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        {% if user.username != 'admin' %}
+                                        <button class="btn btn-sm btn-danger delete-user-btn" 
+                                                data-user-id="{{ user.id }}" 
+                                                data-username="{{ user.username }}">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit User Permissions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId" name="user_id">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" class="form-control" id="editUsername" readonly>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="editIsAdmin" name="is_admin">
+                        <label class="form-check-label" for="editIsAdmin">Admin User</label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Permissions</label>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input permission-check" value="dashboard" id="perm_dashboard">
+                                    <label class="form-check-label" for="perm_dashboard">Dashboard</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input permission-check" value="controls" id="perm_controls">
+                                    <label class="form-check-label" for="perm_controls">Controls</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input permission-check" value="event_log" id="perm_event_log">
+                                    <label class="form-check-label" for="perm_event_log">Event Log</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input permission-check" value="report" id="perm_report">
+                                    <label class="form-check-label" for="perm_report">Report</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input permission-check" value="analytics" id="perm_analytics">
+                                    <label class="form-check-label" for="perm_analytics">Analytics</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input permission-check" value="admin" id="perm_admin">
+                                    <label class="form-check-label" for="perm_admin">Admin</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveUserEdit()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Event listeners for edit buttons
+document.addEventListener('DOMContentLoaded', function() {
+    // Edit user buttons
+    document.querySelectorAll('.edit-user-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            const username = this.getAttribute('data-username');
+            const isAdmin = this.getAttribute('data-is-admin') === 'True';
+            const permissions = this.getAttribute('data-permissions') || '';
+            editUser(userId, username, isAdmin, permissions);
+        });
+    });
+
+    // Delete user buttons
+    document.querySelectorAll('.delete-user-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const userId = this.getAttribute('data-user-id');
+            const username = this.getAttribute('data-username');
+            deleteUser(userId, username);
+        });
+    });
+});
+
+function editUser(id, username, isAdmin, permissions) {
+    document.getElementById('editUserId').value = id;
+    document.getElementById('editUsername').value = username;
+    document.getElementById('editIsAdmin').checked = isAdmin;
+    
+    // Clear all checkboxes first
+    document.querySelectorAll('.permission-check').forEach(cb => cb.checked = false);
+    
+    // Check the appropriate permissions
+    if (permissions) {
+        const perms = permissions.split(',');
+        perms.forEach(perm => {
+            const checkbox = document.getElementById('perm_' + perm.trim());
+            if (checkbox) checkbox.checked = true;
+        });
+    }
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+    modal.show();
+}
+
+function saveUserEdit() {
+    const userId = document.getElementById('editUserId').value;
+    const isAdmin = document.getElementById('editIsAdmin').checked;
+    
+    const permissions = [];
+    document.querySelectorAll('.permission-check:checked').forEach(cb => {
+        permissions.push(cb.value);
+    });
+    
+    fetch('/api/users/' + userId, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            is_admin: isAdmin,
+            permissions: permissions.join(',')
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('User updated successfully!');
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Error updating user: ' + error);
+    });
+}
+
+function deleteUser(id, username) {
+    if (confirm('Are you sure you want to delete user "' + username + '"?')) {
+        fetch('/api/users/' + id, {
+            method: 'DELETE',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('User deleted successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error deleting user: ' + error);
+        });
+    }
+}
+</script>
+{% endblock %}
