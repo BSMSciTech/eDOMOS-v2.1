@@ -23,22 +23,6 @@ app.config.from_object(Config)
 db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'instance', 'alarm_system.db')
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 
-# Add cache-busting headers for better browser compatibility (especially Chromium)
-@app.after_request
-def after_request(response):
-    # Prevent caching for API endpoints and real-time data
-    if request.endpoint and any(x in request.endpoint for x in ['api', 'events', 'statistics']):
-        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '0'
-    
-    # Add CORS headers for WebSocket compatibility
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-    
-    return response
-
 # Initialize extensions
 db.init_app(app)
 login_manager = LoginManager()
@@ -46,124 +30,37 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 socketio = SocketIO(app, async_mode='eventlet', cors_allowed_origins="*")
 
-# WebSocket event handlers with enhanced connection tracking
+# WebSocket event handlers
 @socketio.on('connect', namespace='/events')
 def handle_connect():
-    """Handle client connection to WebSocket with detailed logging"""
-    client_id = request.sid
-    client_info = {
-        'user_agent': request.headers.get('User-Agent', 'Unknown'),
-        'remote_addr': request.environ.get('REMOTE_ADDR'),
-        'origin': request.headers.get('Origin', 'Unknown')
-    }
-    
-    print(f"[WEBSOCKET] 🔌 CLIENT CONNECTING:")
-    print(f"  ├─ Session ID: {client_id}")
-    print(f"  ├─ Remote IP: {client_info['remote_addr']}")
-    print(f"  ├─ User Agent: {client_info['user_agent'][:50]}...")
-    print(f"  ├─ Origin: {client_info['origin']}")
-    print(f"  └─ Namespace: /events")
-    
-    try:
-        # Get total connected clients
-        rooms = socketio.server.manager.rooms.get('/events', {})
-        total_clients = len(rooms)
-        
-        print(f"[WEBSOCKET] ✅ CONNECTION SUCCESSFUL:")
-        print(f"  ├─ Handshake Complete: YES")
-        print(f"  ├─ Session Established: {client_id}")
-        print(f"  ├─ Total Connected Clients: {total_clients}")
-        print(f"  └─ Connection Time: {datetime.now().isoformat()}")
-        
-        # Send connection confirmation with detailed info
-        emit('connection_status', {
-            'status': 'connected',
-            'message': 'WebSocket handshake successful - Real-time monitoring active',
-            'server_time': datetime.now().isoformat(),
-            'session_id': client_id,
-            'total_clients': total_clients,
-            'connection_established': True
-        })
-        
-        # Send immediate ping to test bidirectional communication
-        print(f"[WEBSOCKET] 🏓 Sending initial ping to {client_id}")
-        emit('server_ping', {
-            'timestamp': datetime.now().isoformat(),
-            'message': 'Connection test from server'
-        })
-        
-    except Exception as e:
-        print(f"[WEBSOCKET ERROR] ❌ CONNECTION HANDLER FAILED: {e}")
-        import traceback
-        traceback.print_exc()
+    """Handle client connection to WebSocket"""
+    print(f"[WEBSOCKET] Client connected: {request.sid}")
+    emit('connection_status', {
+        'status': 'connected',
+        'message': 'Real-time monitoring active',
+        'server_time': datetime.now().isoformat()
+    })
 
 @socketio.on('disconnect', namespace='/events')
 def handle_disconnect():
     """Handle client disconnection from WebSocket"""
-    client_id = request.sid
-    try:
-        rooms = socketio.server.manager.rooms.get('/events', {})
-        remaining_clients = len(rooms) - 1  # Subtract the disconnecting client
-        
-        print(f"[WEBSOCKET] 🔌 CLIENT DISCONNECTING:")
-        print(f"  ├─ Session ID: {client_id}")
-        print(f"  ├─ Remaining Clients: {remaining_clients}")
-        print(f"  └─ Disconnect Time: {datetime.now().isoformat()}")
-        
-    except Exception as e:
-        print(f"[WEBSOCKET ERROR] ❌ DISCONNECT HANDLER FAILED: {e}")
+    print(f"[WEBSOCKET] Client disconnected: {request.sid}")
 
 @socketio.on('ping', namespace='/events')
 def handle_ping(data):
     """Handle ping from client for connection testing"""
-    client_id = request.sid
-    print(f"[WEBSOCKET] 🏓 PING RECEIVED:")
-    print(f"  ├─ From Client: {client_id}")
-    print(f"  ├─ Data: {data}")
-    print(f"  └─ Sending Pong Response...")
-    
-    emit('pong', {
-        'timestamp': datetime.now().isoformat(),
-        'client_id': client_id,
-        'server_response': 'Connection active'
-    })
-
-@socketio.on('client_ready', namespace='/events')
-def handle_client_ready(data):
-    """Handle client ready signal for connection verification"""
-    client_id = request.sid
-    print(f"[WEBSOCKET] 📱 CLIENT READY SIGNAL:")
-    print(f"  ├─ From Client: {client_id}")
-    print(f"  ├─ Client Data: {data}")
-    print(f"  └─ Acknowledging client ready state")
-    
-    emit('server_ack', {
-        'status': 'acknowledged',
-        'timestamp': datetime.now().isoformat(),
-        'message': 'Server received client ready signal'
-    })
+    print(f"[WEBSOCKET] Ping received from {request.sid}")
+    emit('pong', {'timestamp': datetime.now().isoformat()})
 
 # Enhanced broadcast function for events
 def broadcast_event(event_data, namespace='/events'):
     """Enhanced broadcast function with better error handling"""
     try:
-        event_type = event_data.get('event', {}).get('event_type', 'unknown')
-        print(f"[WEBSOCKET] 📡 BROADCASTING EVENT:")
-        print(f"  ├─ Event Type: {event_type}")
-        print(f"  ├─ Event Name: 'new_event'")
-        print(f"  ├─ Namespace: {namespace}")
-        print(f"  ├─ Connected Clients: {len(socketio.server.manager.rooms.get(namespace, {}))}")
-        print(f"  └─ Payload Keys: {list(event_data.keys())}")
-        
-        # Emit the event
+        print(f"[WEBSOCKET] Broadcasting event to all clients: {event_data.get('event', {}).get('event_type', 'unknown')}")
         socketio.emit('new_event', event_data, namespace=namespace)
-        
-        print(f"[WEBSOCKET] ✅ EVENT BROADCAST SUCCESSFUL - Event '{event_type}' sent to all clients")
+        print(f"[WEBSOCKET] Event broadcast successful")
     except Exception as e:
-        print(f"[WEBSOCKET ERROR] ❌ BROADCAST FAILED: {e}")
-        print(f"[WEBSOCKET ERROR] Event data: {event_data}")
-        import traceback
-        traceback.print_exc()
+        print(f"[WEBSOCKET ERROR] Failed to broadcast event: {e}")
 
 # GPIO setup - only if not in testing mode
 if not os.environ.get('TESTING'):
@@ -187,8 +84,6 @@ last_logged_door_state = None
 last_logged_alarm_state = False
 last_event_timestamps = {}
 event_lock = threading.Lock()
-event_counter = 0  # Global counter to track all log_event calls
-last_door_event_time = 0  # Track last door event time for minimum interval
 
 # Initialize system
 def init_system():
@@ -218,42 +113,19 @@ def init_system():
 # Door monitoring thread
 def monitor_door():
     global door_open, alarm_active, timer_active, timer_duration, timer_thread
-    last_gpio_state = None
-    state_change_time = 0
-    
     while True:
         if os.environ.get('TESTING'):
             time.sleep(1)  # Don't monitor in testing mode
             continue
             
         # For NO sensor: HIGH means door open, LOW means door closed
-        current_gpio_state = GPIO.input(11) == GPIO.HIGH  # NO mode
-        
-        # GPIO debouncing - only process state changes after stable for 50ms
-        if current_gpio_state != last_gpio_state:
-            state_change_time = time.time()
-            last_gpio_state = current_gpio_state
-            continue
-        
-        # Check if state has been stable for at least 50ms
-        if time.time() - state_change_time < 0.05:
-            continue
-            
-        door_is_open = current_gpio_state
+        door_is_open = GPIO.input(11) == GPIO.HIGH  # NO mode
 
         if door_is_open and not door_open:
-            # Door just opened - check minimum time between events
-            global last_door_event_time
-            current_time = time.time()
-            if current_time - last_door_event_time < 1.0:  # Minimum 1 second between door events
-                print(f"[DEBUG] Door event too soon after last event, ignoring (time since last: {current_time - last_door_event_time:.3f}s)")
-                continue
-                
+            # Door just opened
             door_open = True
             alarm_active = False
             timer_active = True
-            last_door_event_time = current_time
-            
             if not os.environ.get('TESTING'):
                 GPIO.output(16, GPIO.LOW)  # Ensure white LED is off
             with app.app_context():
@@ -261,27 +133,15 @@ def monitor_door():
                 timer_duration = int(timer_setting.value) if timer_setting else 30
             print(f"[DEBUG] Door opened. Timer set to {timer_duration} seconds.")
             log_event('door_open', 'Door opened')
-            
-            # Improved timer thread management
             if timer_thread and timer_thread.is_alive():
-                print("[DEBUG] Stopping existing timer thread...")
-                timer_active = False  # Signal old thread to stop
-                timer_thread.join(timeout=1.0)  # Wait max 1 second
+                timer_thread.join()
             timer_thread = threading.Thread(target=alarm_timer, args=(timer_duration,))
             timer_thread.start()
-            
         elif not door_is_open and door_open:
-            # Door just closed - check minimum time between events
-            current_time = time.time()
-            if current_time - last_door_event_time < 1.0:  # Minimum 1 second between door events
-                print(f"[DEBUG] Door event too soon after last event, ignoring (time since last: {current_time - last_door_event_time:.3f}s)")
-                continue
-                
+            # Door just closed
             door_open = False
             alarm_active = False
             timer_active = False
-            last_door_event_time = current_time
-            
             # Reset alarm state for duplicate prevention
             global last_logged_alarm_state
             last_logged_alarm_state = False
@@ -332,99 +192,81 @@ def alarm_timer(duration):
 
 def log_event(event_type, description):
     from pytz import timezone
-    global door_open, alarm_active, last_logged_door_state, last_logged_alarm_state, last_event_timestamps, event_counter
+    global door_open, alarm_active, last_logged_door_state, last_logged_alarm_state, last_event_timestamps
     
-    # Enhanced duplicate prevention logic with stronger locks and multiple checks
+    # Enhanced duplicate prevention logic
     with event_lock:
-        event_counter += 1
-        call_id = event_counter
         current_time = time.time()
         event_key = f"{event_type}_{description}"
         
-        print(f"[DEBUG] log_event called #{call_id}: {event_type} - {description} at {current_time}")
+        print(f"[DEBUG] log_event called: {event_type} - {description}")
         
-        # STRONGER Time-based duplicate prevention (within 5 seconds for better detection)
+        # Time-based duplicate prevention (within 2 seconds for better detection)
         if event_key in last_event_timestamps:
             time_diff = current_time - last_event_timestamps[event_key]
-            if time_diff < 5.0:  # Increased to 5 seconds to prevent rapid duplicates
-                print(f"[DEBUG] *** DUPLICATE PREVENTED ***: {event_type} (time_diff: {time_diff:.3f}s)")
+            if time_diff < 2.0:  # Increased from 0.1 to 2 seconds
+                print(f"[DEBUG] Duplicate event prevented: {event_type} (time_diff: {time_diff:.3f}s)")
                 return
-        
-        # Database-based duplicate check (check last entry in DB)
-        try:
-            with app.app_context():
-                last_db_event = EventLog.query.filter_by(event_type=event_type).order_by(EventLog.id.desc()).first()
-                if last_db_event:
-                    time_since_last = (datetime.now() - last_db_event.timestamp.replace(tzinfo=None)).total_seconds()
-                    if time_since_last < 3.0:  # If same event type within 3 seconds, skip
-                        print(f"[DEBUG] *** DATABASE DUPLICATE PREVENTED ***: {event_type} (last event {time_since_last:.3f}s ago)")
-                        return
-        except Exception as e:
-            print(f"[DEBUG] Error checking database duplicates: {e}")
         
         # State-based duplicate prevention with better logic
         if event_type == 'door_open':
             if last_logged_door_state is True:
-                print(f"[DEBUG] *** STATE DUPLICATE PREVENTED ***: door_open (already logged as open)")
+                print(f"[DEBUG] Duplicate door_open prevented (already logged as open)")
                 return
             last_logged_door_state = True
             print(f"[DEBUG] Setting door state to OPEN")
         elif event_type == 'door_close':
             if last_logged_door_state is False:
-                print(f"[DEBUG] *** STATE DUPLICATE PREVENTED ***: door_close (already logged as closed)")
+                print(f"[DEBUG] Duplicate door_close prevented (already logged as closed)")
                 return
             last_logged_door_state = False
             print(f"[DEBUG] Setting door state to CLOSED")
         elif event_type == 'alarm_triggered':
             if last_logged_alarm_state is True:
-                print(f"[DEBUG] *** STATE DUPLICATE PREVENTED ***: alarm_triggered (already triggered)")
+                print(f"[DEBUG] Duplicate alarm_triggered prevented (already triggered)")
                 return
             last_logged_alarm_state = True
             print(f"[DEBUG] Setting alarm state to TRIGGERED")
         
         # Update timestamp for all event types
         last_event_timestamps[event_key] = current_time
-        print(f"[DEBUG] *** EVENT WILL BE LOGGED ***: {event_type} - {description}")
+    
+    with app.app_context():
+        # Convert timestamp to IST
+        ist = timezone('Asia/Kolkata')
+        now_ist = datetime.now(ist)
+        event = EventLog(event_type=event_type, description=description, timestamp=now_ist)
+        db.session.add(event)
+        db.session.commit()
         
-        # DATABASE INSERTION MUST BE INSIDE THE LOCK TO PREVENT RACE CONDITIONS
-        with app.app_context():
-            # Convert timestamp to IST
-            ist = timezone('Asia/Kolkata')
-            now_ist = datetime.now(ist)
-            event = EventLog(event_type=event_type, description=description, timestamp=now_ist)
-            db.session.add(event)
-            db.session.commit()
-            print(f"[DEBUG] ✅ EVENT COMMITTED TO DATABASE: ID will be assigned")
-            
-            # Get updated statistics
-            total_events = EventLog.query.count()
-            door_open_events = EventLog.query.filter_by(event_type='door_open').count()
-            door_close_events = EventLog.query.filter_by(event_type='door_close').count()
-            alarm_events = EventLog.query.filter_by(event_type='alarm_triggered').count()
-            
-            # Get timer setting
-            timer_setting = Setting.query.filter_by(key='timer_duration').first()
-            timer_set = timer_setting.value if timer_setting else '30'
-            
-            # Prepare real-time status payload
-            last_event = EventLog.query.order_by(EventLog.timestamp.desc()).first()
-            payload = {
-                'event': event.to_dict(),
-                'door_status': 'Open' if door_open else 'Closed',
-                'alarm_status': 'Active' if alarm_active else 'Inactive',
-                'timer_set': timer_set,
-                'last_event': last_event.to_dict() if last_event else None,
-                'statistics': {
-                    'total_events': total_events,
-                    'door_open_events': door_open_events,
-                    'door_close_events': door_close_events,
-                    'alarm_events': alarm_events
-                }
+        # Get updated statistics
+        total_events = EventLog.query.count()
+        door_open_events = EventLog.query.filter_by(event_type='door_open').count()
+        door_close_events = EventLog.query.filter_by(event_type='door_close').count()
+        alarm_events = EventLog.query.filter_by(event_type='alarm_triggered').count()
+        
+        # Get timer setting
+        timer_setting = Setting.query.filter_by(key='timer_duration').first()
+        timer_set = timer_setting.value if timer_setting else '30'
+        
+        # Prepare real-time status payload
+        last_event = EventLog.query.order_by(EventLog.timestamp.desc()).first()
+        payload = {
+            'event': event.to_dict(),
+            'door_status': 'Open' if door_open else 'Closed',
+            'alarm_status': 'Active' if alarm_active else 'Inactive',
+            'timer_set': timer_set,
+            'last_event': last_event.to_dict() if last_event else None,
+            'statistics': {
+                'total_events': total_events,
+                'door_open_events': door_open_events,
+                'door_close_events': door_close_events,
+                'alarm_events': alarm_events
             }
-            
-            # Broadcast event to all connected clients using enhanced function
-            print(f"[DEBUG] Broadcasting WebSocket event: {event_type}")
-            broadcast_event(payload)
+        }
+        # Broadcast event to all connected clients using enhanced function
+        print(f"[DEBUG] Broadcasting WebSocket event: {event_type}")
+        broadcast_event(payload)
 
 def send_alarm_email(duration):
     try:
@@ -855,37 +697,18 @@ def reports():
         permissions=current_user.permissions.split(',')
     )
 
-
-
 @app.route('/api/events')
 @login_required
 def get_events():
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
-    since_id = request.args.get('since', 0, type=int)  # For polling - get events since this ID
-    
-    # If 'since' parameter is provided, return new events for polling
-    if since_id > 0:
-        print(f"[API] Polling request: Getting events since ID {since_id}")
-        new_events = EventLog.query.filter(EventLog.id > since_id).order_by(EventLog.timestamp.desc()).limit(per_page).all()
-        print(f"[API] Found {len(new_events)} new events since ID {since_id}")
-        return jsonify({
-            'events': [event.to_dict() for event in new_events],
-            'total': len(new_events),
-            'since_id': since_id,
-            'latest_id': new_events[0].id if new_events else since_id,
-            'polling': True
-        })
-    
-    # Regular paginated request
     events = EventLog.query.order_by(EventLog.timestamp.desc()).paginate(
         page=page, per_page=per_page, error_out=False)
     return jsonify({
         'events': [event.to_dict() for event in events.items],
         'total': events.total,
         'pages': events.pages,
-        'current_page': page,
-        'polling': False
+        'current_page': page
     })
 
 @app.route('/api/statistics')
@@ -927,38 +750,6 @@ def backup_database():
         return jsonify({'error': 'Permission denied'}), 403
         
     return send_file('instance/alarm_system.db', as_attachment=True, download_name='alarm_system_backup.db')
-
-@app.route('/api/test-event', methods=['POST'])
-@login_required
-def test_event():
-    """Test endpoint to simulate door events for testing auto-refresh"""
-    if not current_user.is_admin:
-        return jsonify({'error': 'Admin access required'}), 403
-        
-    try:
-        data = request.get_json()
-        event_type = data.get('event_type', 'door_open')
-        description = data.get('description', f'Test {event_type} event')
-        
-        # Valid event types
-        valid_types = ['door_open', 'door_close', 'alarm_triggered', 'test_event']
-        if event_type not in valid_types:
-            return jsonify({'error': 'Invalid event type'}), 400
-            
-        # Log the test event
-        print(f"[TEST] Manually triggering test event: {event_type}")
-        log_event(event_type, description)
-        
-        return jsonify({
-            'success': True,
-            'message': f'Test event "{event_type}" created successfully',
-            'event_type': event_type,
-            'description': description
-        })
-        
-    except Exception as e:
-        print(f"[ERROR] Test event failed: {e}")
-        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/report', methods=['POST'])
 @login_required
@@ -1237,8 +1028,559 @@ def generate_report():
         
     except Exception as e:
         print(f"Report Generation Error: {str(e)}")
+        return jsonify({'error': f'Report generation failed: {str(e)}'}), 500
 
-# All test routes removed for production deployment
+# Production routes only - test routes removed for production deployment
+
+# Test dashboard route removed for production
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Dashboard - eDOMOS v2</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: #fff; }
+        .status-panel { background: #333; padding: 20px; margin: 10px 0; border-radius: 8px; display: inline-block; min-width: 200px; }
+        .status-value { font-size: 2rem; font-weight: bold; color: #3b82f6; }
+        .event-feed { background: #333; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        .event-item { background: #444; padding: 10px; margin: 5px 0; border-radius: 5px; }
+        .stats { display: flex; gap: 20px; flex-wrap: wrap; }
+        button { padding: 10px 20px; margin: 5px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🔒 Test Dashboard - eDOMOS v2 Real-Time Testing</h1>
+    
+    <div class="stats">
+        <div class="status-panel">
+            <h3>Door Status</h3>
+            <div class="status-value" id="door-status">{{ door_status }}</div>
+        </div>
+        <div class="status-panel">
+            <h3>Alarm Status</h3>
+            <div class="status-value" id="alarm-status">{{ alarm_status }}</div>
+        </div>
+        <div class="status-panel">
+            <h3>Timer Setting</h3>
+            <div class="status-value" id="timer-set">{{ timer_set }}s</div>
+        </div>
+        <div class="status-panel">
+            <h3>Total Events</h3>
+            <div class="status-value" id="total-events">{{ total_events }}</div>
+        </div>
+    </div>
+    
+    <div class="stats">
+        <div class="status-panel">
+            <h3>Door Openings</h3>
+            <div class="status-value" id="door-open-events">{{ door_open_events }}</div>
+        </div>
+        <div class="status-panel">
+            <h3>Door Closings</h3>
+            <div class="status-value" id="door-close-events">{{ door_close_events }}</div>
+        </div>
+        <div class="status-panel">
+            <h3>Alarm Events</h3>
+            <div class="status-value" id="alarm-events">{{ alarm_events }}</div>
+        </div>
+    </div>
+    
+    <h3>🎮 Test Controls:</h3>
+    <button onclick="triggerEvent('door_open')">🚪 Trigger Door Open</button>
+    <button onclick="triggerEvent('door_close')">🔒 Trigger Door Close</button>
+    <button onclick="triggerEvent('alarm')">🚨 Trigger Alarm</button>
+    
+    <div class="event-feed">
+        <h3>📡 Live Event Feed</h3>
+        <div id="event-list">
+            <div style="opacity: 0.6;">Waiting for events...</div>
+        </div>
+    </div>
+    
+    <div style="background: #222; padding: 15px; border-radius: 8px; margin-top: 20px;">
+        <h4>WebSocket Status: <span id="connection-status">Connecting...</span></h4>
+        <p>Events received: <span id="events-received">0</span></p>
+    </div>
+    
+    <script>
+        let socket = null;
+        let eventCount = 0;
+        let eventsReceived = 0;
+        
+        // Initialize WebSocket
+        socket = io('/events', {
+            transports: ['websocket', 'polling'],
+            reconnection: true
+        });
+        
+        socket.on('connect', () => {
+            console.log('✅ WebSocket connected');
+            document.getElementById('connection-status').textContent = 'Connected ✅';
+            document.getElementById('connection-status').style.color = '#10b981';
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('❌ WebSocket disconnected');
+            document.getElementById('connection-status').textContent = 'Disconnected ❌';
+            document.getElementById('connection-status').style.color = '#ef4444';
+        });
+        
+        socket.on('new_event', (data) => {
+            console.log('📡 Received real-time event:', data);
+            eventsReceived++;
+            document.getElementById('events-received').textContent = eventsReceived;
+            
+            // Update statistics in real-time
+            if (data.statistics) {
+                document.getElementById('total-events').textContent = data.statistics.total_events || 0;
+                document.getElementById('door-open-events').textContent = data.statistics.door_open_events || 0;
+                document.getElementById('door-close-events').textContent = data.statistics.door_close_events || 0;
+                document.getElementById('alarm-events').textContent = data.statistics.alarm_events || 0;
+            }
+            
+            // Update status
+            if (data.door_status) document.getElementById('door-status').textContent = data.door_status;
+            if (data.alarm_status) document.getElementById('alarm-status').textContent = data.alarm_status;
+            if (data.timer_set) document.getElementById('timer-set').textContent = data.timer_set + 's';
+            
+            // Add to event feed
+            if (data.event) {
+                addEventToFeed(data.event);
+            }
+        });
+        
+        function addEventToFeed(event) {
+            const eventList = document.getElementById('event-list');
+            
+            // Clear waiting message
+            if (eventList.innerHTML.includes('Waiting for events')) {
+                eventList.innerHTML = '';
+            }
+            
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'event-item';
+            eventDiv.style.opacity = '0';
+            eventDiv.style.transform = 'translateX(-20px)';
+            eventDiv.style.transition = 'all 0.3s ease';
+            
+            let icon = '📝';
+            if (event.event_type === 'door_open') icon = '🚪';
+            else if (event.event_type === 'door_close') icon = '🔒';
+            else if (event.event_type === 'alarm_triggered') icon = '🚨';
+            
+            eventDiv.innerHTML = `
+                <strong>${icon} ${event.event_type.replace('_', ' ').toUpperCase()}</strong><br>
+                <small>${event.description} | #${event.id} | ${new Date().toLocaleTimeString()}</small>
+            `;
+            
+            eventList.insertBefore(eventDiv, eventList.firstChild);
+            
+            // Animate in
+            setTimeout(() => {
+                eventDiv.style.opacity = '1';
+                eventDiv.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // Keep only last 10 events
+            while (eventList.children.length > 10) {
+                eventList.removeChild(eventList.lastChild);
+            }
+        }
+        
+        function triggerEvent(type) {
+            const urls = {
+                'door_open': '/trigger-door-open',
+                'door_close': '/trigger-door-close', 
+                'alarm': '/trigger-alarm'
+            };
+            
+            fetch(urls[type])
+                .then(response => response.text())
+                .then(data => console.log('✅ Event triggered:', data))
+                .catch(error => console.error('❌ Error:', error));
+        }
+    </script>
+</body>
+</html>
+        ''', 
+# Production code only
+
+# Test routes removed for production
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enhanced Event Log - eDOMOS v2</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: #fff; }
+        .event-entry { background: #2a2a2a; padding: 10px; margin: 5px 0; border-radius: 5px; border-left: 4px solid #3b82f6; }
+        .event-entry.door-open { border-left-color: #f59e0b; }
+        .event-entry.door-close { border-left-color: #10b981; }
+        .event-entry.alarm { border-left-color: #ef4444; }
+        button { padding: 10px 20px; margin: 5px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .status { padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .connected { background: #10b981; }
+        .disconnected { background: #ef4444; }
+    </style>
+</head>
+<body>
+    <h1>🔗 Enhanced WebSocket Event Log - eDOMOS v2</h1>
+    <div id="status" class="status disconnected">Connecting...</div>
+    
+    <h3>🎮 Test Controls:</h3>
+    <button onclick="triggerEvent('/trigger_event')">🎲 Random Event</button>
+    <button onclick="triggerEvent('/trigger-door-open')">🚪 Door Open</button>
+    <button onclick="triggerEvent('/trigger-door-close')">🔒 Door Close</button>
+    <button onclick="triggerEvent('/trigger-alarm')">🚨 Alarm</button>
+    
+    <h3>📊 Statistics:</h3>
+    <div style="display: flex; gap: 20px;">
+        <div>Events Received: <span id="events-received">0</span></div>
+        <div>Total Events: <span id="total-events">0</span></div>
+        <div>Door Events: <span id="door-events">0</span></div>
+        <div>Alarm Events: <span id="alarm-events">0</span></div>
+    </div>
+    
+    <h3>📡 Live Event Stream:</h3>
+    <div id="event-log" style="max-height: 400px; overflow-y: auto; border: 1px solid #333; padding: 10px; background: #111;">
+        <div style="text-align: center; opacity: 0.6;">Waiting for events...</div>
+    </div>
+
+    <script>
+        // Apply your example logic with enhancements
+        const socket = io('/events');
+        let eventsReceived = 0;
+        
+        socket.on('connect', () => {
+            console.log('✅ Connected to WebSocket server');
+            document.getElementById('status').innerHTML = '✅ Connected! Socket ID: ' + socket.id;
+            document.getElementById('status').className = 'status connected';
+        });
+        
+        socket.on('disconnect', (reason) => {
+            console.log('❌ Disconnected:', reason);
+            document.getElementById('status').innerHTML = '❌ Disconnected: ' + reason;
+            document.getElementById('status').className = 'status disconnected';
+        });
+        
+        // Enhanced event handler applying your example logic
+        socket.on('new_event', (data) => {
+            console.log('📡 Received event:', data);
+            eventsReceived++;
+            document.getElementById('events-received').textContent = eventsReceived;
+            
+            // Update statistics from WebSocket data
+            if (data.statistics) {
+                document.getElementById('total-events').textContent = data.statistics.total_events || 0;
+                const doorEvents = (data.statistics.door_open_events || 0) + (data.statistics.door_close_events || 0);
+                document.getElementById('door-events').textContent = doorEvents;
+                document.getElementById('alarm-events').textContent = data.statistics.alarm_events || 0;
+            }
+            
+            // Add event to log (enhanced from your example)
+            addEventToLog(data);
+        });
+        
+        function addEventToLog(data) {
+            const log = document.getElementById('event-log');
+            
+            // Clear waiting message
+            if (log.innerHTML.includes('Waiting for events')) {
+                log.innerHTML = '';
+            }
+            
+            const entry = document.createElement('div');
+            entry.className = 'event-entry';
+            
+            if (data.event) {
+                // Add specific styling based on event type
+                if (data.event.event_type === 'door_open') {
+                    entry.classList.add('door-open');
+                } else if (data.event.event_type === 'door_close') {
+                    entry.classList.add('door-close');
+                } else if (data.event.event_type === 'alarm_triggered') {
+                    entry.classList.add('alarm');
+                }
+                
+                // Enhanced display format (applying your example)
+                const timestamp = new Date().toLocaleTimeString();
+                const eventType = data.event.event_type.replace('_', ' ').toUpperCase();
+                
+                entry.innerHTML = `
+                    <strong>${timestamp} - ${getEventIcon(data.event.event_type)} ${eventType}</strong><br>
+                    <small>${data.event.description} | ID: #${data.event.id}</small>
+                `;
+            } else {
+                // Fallback for basic events
+                entry.innerHTML = '<strong>' + new Date().toLocaleTimeString() + '</strong> - ' + JSON.stringify(data, null, 2);
+            }
+            
+            // Insert at top (latest first)
+            log.insertBefore(entry, log.firstChild);
+            
+            // Limit to 20 entries
+            while (log.children.length > 20) {
+                log.removeChild(log.lastChild);
+            }
+        }
+        
+        function getEventIcon(eventType) {
+            switch (eventType) {
+                case 'door_open': return '🚪';
+                case 'door_close': return '🔒';
+                case 'alarm_triggered': return '🚨';
+                default: return '📋';
+            }
+        }
+        
+        function triggerEvent(url) {
+            console.log('🎯 Triggering:', url);
+            fetch(url)
+                .then(response => response.text())
+                .then(data => console.log('✅ Response:', data))
+                .catch(error => console.error('❌ Error:', error));
+        }
+    </script>
+</body>
+</html>
+    ''')
+
+@app.route('/test-websocket')
+def test_websocket():
+    """Original WebSocket test page"""
+    return render_template_string('''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Real-Time Test - eDOMOS v2</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #1a1a1a; color: #fff; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .status { padding: 15px; margin: 10px 0; border-radius: 8px; border: 2px solid; }
+        .connected { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .disconnected { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+        .event { background: #e3f2fd; color: #0d47a1; padding: 12px; margin: 8px 0; border-radius: 6px; border-left: 4px solid #2196f3; animation: slideIn 0.3s ease; }
+        .event.new { background: #e8f5e8; border-left-color: #4caf50; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat-card { background: #333; padding: 15px; border-radius: 8px; text-align: center; }
+        .stat-number { font-size: 2rem; font-weight: bold; color: #2196f3; }
+        .stat-label { font-size: 0.9rem; opacity: 0.8; }
+        button { padding: 12px 24px; margin: 8px; cursor: pointer; background: #2196f3; color: white; border: none; border-radius: 6px; font-weight: bold; transition: background 0.3s; }
+        button:hover { background: #1976d2; }
+        .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 20px 0; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+        .debug-info { background: #2a2a2a; padding: 15px; border-radius: 8px; margin: 20px 0; font-size: 0.9rem; }
+        .debug-info code { background: #1a1a1a; padding: 2px 6px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 WebSocket Real-Time Test - eDOMOS v2</h1>
+        <div id="status" class="status disconnected">🔄 Connecting to WebSocket server...</div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalEvents">0</div>
+                <div class="stat-label">Total Events</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="doorEvents">0</div>
+                <div class="stat-label">Door Events</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="alarmEvents">0</div>
+                <div class="stat-label">Alarm Events</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="eventsReceived">0</div>
+                <div class="stat-label">Events Received</div>
+            </div>
+        </div>
+        
+        <h3>🎮 Test Controls:</h3>
+        <div class="controls">
+            <button onclick="triggerEvent('/trigger-door-open', 'door_open')">🚪 Trigger Door Open</button>
+            <button onclick="triggerEvent('/trigger-door-close', 'door_close')">🔒 Trigger Door Close</button>
+            <button onclick="triggerEvent('/trigger-alarm', 'alarm')">🚨 Trigger Alarm</button>
+            <button onclick="clearEvents()">🗑️ Clear Events</button>
+        </div>
+        
+        <div class="debug-info">
+            <strong>🔧 Debug Info:</strong> 
+            Socket ID: <code id="socketId">Not connected</code> | 
+            Transport: <code id="transport">Unknown</code> | 
+            Connected: <code id="connectedTime">Never</code>
+        </div>
+        
+        <h3>📡 Live Events Stream:</h3>
+        <div id="events">
+            <div style="text-align: center; opacity: 0.6; padding: 20px;">
+                ⏳ Waiting for events...
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let socket = null;
+        let eventsReceived = 0;
+        let totalEvents = 0;
+        let doorEvents = 0;
+        let alarmEvents = 0;
+        let connectedTime = null;
+        
+        console.log('🚀 Initializing enhanced WebSocket test...');
+        
+        socket = io('/events', {
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionAttempts: 10,
+            timeout: 20000
+        });
+        
+        socket.on('connect', () => {
+            console.log('✅ Connected to WebSocket server');
+            connectedTime = new Date();
+            updateStatus(true);
+            updateDebugInfo();
+        });
+        
+        socket.on('disconnect', (reason) => {
+            console.log('❌ Disconnected:', reason);
+            updateStatus(false, reason);
+            updateDebugInfo();
+        });
+        
+        socket.on('new_event', (data) => {
+            console.log('📡 Received WebSocket event:', data);
+            eventsReceived++;
+            processEvent(data);
+            updateStats();
+            updateDebugInfo();
+        });
+        
+        socket.on('connect_error', (error) => {
+            console.error('❌ Connection error:', error);
+            updateStatus(false, 'Connection Error: ' + error);
+        });
+        
+        function updateStatus(connected, reason = '') {
+            const statusEl = document.getElementById('status');
+            if (connected) {
+                statusEl.innerHTML = '✅ Connected to WebSocket server at ' + new Date().toLocaleTimeString();
+                statusEl.className = 'status connected';
+            } else {
+                statusEl.innerHTML = '❌ Disconnected from WebSocket server' + (reason ? ': ' + reason : '');
+                statusEl.className = 'status disconnected';
+            }
+        }
+        
+        function updateDebugInfo() {
+            document.getElementById('socketId').textContent = socket?.id || 'Not connected';
+            document.getElementById('transport').textContent = socket?.io?.engine?.transport?.name || 'Unknown';
+            document.getElementById('connectedTime').textContent = connectedTime ? connectedTime.toLocaleTimeString() : 'Never';
+        }
+        
+        function processEvent(data) {
+            totalEvents++;
+            
+            // Update statistics from WebSocket data
+            if (data.statistics) {
+                document.getElementById('totalEvents').textContent = data.statistics.total_events || totalEvents;
+                doorEvents = (data.statistics.door_open_events || 0) + (data.statistics.door_close_events || 0);
+                document.getElementById('doorEvents').textContent = doorEvents;
+                document.getElementById('alarmEvents').textContent = data.statistics.alarm_events || 0;
+            }
+            
+            // Add event to display
+            if (data.event) {
+                addEventToDisplay(data.event);
+            }
+        }
+        
+        function addEventToDisplay(event) {
+            const eventsDiv = document.getElementById('events');
+            
+            // Clear waiting message
+            if (eventsDiv.innerHTML.includes('Waiting for events')) {
+                eventsDiv.innerHTML = '';
+            }
+            
+            const eventDiv = document.createElement('div');
+            eventDiv.className = 'event new';
+            
+            let icon = '📝';
+            if (event.event_type === 'door_open') icon = '🚪';
+            else if (event.event_type === 'door_close') icon = '🔒';
+            else if (event.event_type === 'alarm_triggered') icon = '🚨';
+            
+            eventDiv.innerHTML = `
+                <div style="display: flex; justify-content: between; align-items: center;">
+                    <div>
+                        <strong>${icon} ${event.event_type.replace('_', ' ').toUpperCase()}</strong><br>
+                        <small>${event.description}</small>
+                    </div>
+                    <div style="text-align: right; margin-left: auto;">
+                        <small>#${event.id} | ${new Date().toLocaleTimeString()}</small>
+                    </div>
+                </div>
+            `;
+            
+            eventsDiv.insertBefore(eventDiv, eventsDiv.firstChild);
+            
+            // Remove highlight after 3 seconds
+            setTimeout(() => {
+                eventDiv.classList.remove('new');
+            }, 3000);
+            
+            // Keep only last 15 events
+            while (eventsDiv.children.length > 15) {
+                eventsDiv.removeChild(eventsDiv.lastChild);
+            }
+        }
+        
+        function updateStats() {
+            document.getElementById('eventsReceived').textContent = eventsReceived;
+        }
+        
+        function triggerEvent(url, type) {
+            console.log('🎯 Triggering test event:', type);
+            fetch(url)
+                .then(response => response.text())
+                .then(data => {
+                    console.log('✅ Test event response:', data);
+                })
+                .catch(error => {
+                    console.error('❌ Error triggering event:', error);
+                });
+        }
+        
+        function clearEvents() {
+            document.getElementById('events').innerHTML = '<div style="text-align: center; opacity: 0.6; padding: 20px;">⏳ Waiting for events...</div>';
+        }
+    </script>
+</body>
+</html>
+    ''')
+
+# Test route for triggering events (for debugging)
+@app.route('/api/test-event', methods=['POST'])
+@login_required
+def test_event():
+    if current_user.is_admin:
+        data = request.get_json()
+        event_type = data.get('event_type', 'door_open')
+        description = data.get('description', 'Test event')
+        log_event(event_type, description)
+        return jsonify({'success': True, 'message': 'Test event triggered'})
+    return jsonify({'error': 'Permission denied'}), 403
+
+@app.route('/websocket_test.html')
+def websocket_test():
+    """Serve WebSocket test page"""
+    from flask import send_from_directory
+    return send_from_directory('.', 'websocket_test.html')
 
 # WebSocket events
 @socketio.on('connect', namespace='/events')
@@ -1249,17 +1591,6 @@ def handle_connect():
 @socketio.on('disconnect', namespace='/events')
 def handle_disconnect():
     print(f'❌ WebSocket client disconnected: {request.sid}')
-
-@socketio.on('ping', namespace='/events')
-def handle_ping(data):
-    """Handle ping from client for connection testing"""
-    print(f"[WEBSOCKET] Ping received from {request.sid}")
-    emit('pong', {'timestamp': datetime.now().isoformat()})
-
-@app.route('/websocket-test')
-def websocket_test():
-    """WebSocket connection test page"""
-    return render_template('websocket_test.html')
 
 # Start door monitoring in a separate thread
 monitor_thread_started = False
@@ -1281,20 +1612,6 @@ if __name__ == '__main__':
     print("🚀 Starting eDOMOS-v2 Door Alarm System...")
     print("📡 WebSocket support enabled")
     print("🔄 Event-driven real-time updates active")
-    print(f"🌐 Server will be available at: http://0.0.0.0:5000")
-    print(f"🔌 WebSocket endpoint: ws://0.0.0.0:5000/socket.io/?EIO=4&transport=websocket&ns=/events")
-    print("=" * 60)
-    
     init_system()
     start_monitoring()
-    
-    # Enhanced SocketIO configuration for better connection handling
-    print("🔧 Starting SocketIO server with enhanced configuration...")
-    socketio.run(
-        app, 
-        host='0.0.0.0', 
-        port=5000, 
-        debug=False,
-        use_reloader=False,  # Prevent double initialization
-        log_output=True      # Enable SocketIO logging
-    )
+    socketio.run(app, host='0.0.0.0', port=5000, debug=False)

@@ -13,6 +13,9 @@
         <div class="col-md-4 text-end">
             <div class="status-indicators">
                 <div class="d-flex align-items-center">
+                    <button class="btn btn-sm btn-outline-primary me-2" onclick="manualRefresh()" title="Manual Refresh">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
                     <span class="me-2">Live Updates:</span>
                     <div id="websocket-status" class="me-2">
                         <span class="badge bg-success" id="live-status">
@@ -809,38 +812,83 @@
 let eventCount = 0;
 
 function loadRecentEvents() {
-    // Load recent events from server-side data
+    console.log('📊 Loading recent events for dashboard...');
+    
+    // First try to load from server-side data
     const eventData = document.getElementById('event-data');
-    const events = eventData ? JSON.parse(eventData.textContent) : [];
+    const initialEvents = eventData ? JSON.parse(eventData.textContent) : [];
     
     const eventList = document.getElementById('event-list');
-    if (events.length > 0) {
-        events.forEach(event => {
-            addEventToFeed(event);
-        });
-    } else {
-        eventList.innerHTML = '<div class="text-center opacity-50 py-4">No recent events</div>';
+    if (!eventList) {
+        console.warn('Event list container not found');
+        return;
     }
+    
+    // Clear existing events
+    eventList.innerHTML = '';
+    eventCount = 0;
+    
+    // Load recent events from API for more complete data
+    fetch('/api/events?per_page=10')
+        .then(response => response.json())
+        .then(data => {
+            console.log('✅ Loaded recent events:', data.events.length);
+            
+            if (data.events && data.events.length > 0) {
+                // Add events in reverse order so newest appears first
+                data.events.reverse().forEach(event => {
+                    addEventToFeed(event);
+                });
+            } else {
+                eventList.innerHTML = '<div class="text-center opacity-50 py-4"><i class="fas fa-inbox me-2"></i>No recent events</div>';
+            }
+        })
+        .catch(error => {
+            console.error('❌ Error loading recent events:', error);
+            
+            // Fallback to server-side data if API fails
+            if (initialEvents.length > 0) {
+                initialEvents.forEach(event => {
+                    addEventToFeed(event);
+                });
+            } else {
+                eventList.innerHTML = '<div class="text-center opacity-50 py-4"><i class="fas fa-exclamation-circle me-2"></i>Unable to load events</div>';
+            }
+        });
 }
 
 function addEventToFeed(event) {
     const eventList = document.getElementById('event-list');
+    if (!eventList) {
+        console.warn('Event list container not found');
+        return;
+    }
+    
     const eventItem = document.createElement('div');
     eventItem.className = 'event-item';
     eventItem.style.animationDelay = `${eventCount * 0.1}s`;
     
+    // Handle both event.type (from template) and event.event_type (from WebSocket)
+    const eventType = event.event_type || event.type;
+    
     let iconClass = 'event-icon ';
     let iconSymbol = 'fas fa-info-circle';
     
-    if (event.type === 'door_open') {
+    if (eventType === 'door_open') {
         iconClass += 'door-open';
         iconSymbol = 'fas fa-door-open';
-    } else if (event.type === 'door_close') {
+    } else if (eventType === 'door_close') {
         iconClass += 'door-close';
         iconSymbol = 'fas fa-door-closed';
-    } else if (event.type === 'alarm_triggered') {
+    } else if (eventType === 'alarm_triggered') {
         iconClass += 'alarm';
         iconSymbol = 'fas fa-exclamation-triangle';
+    }
+    
+    // Format timestamp if it's in ISO format
+    let displayTime = event.timestamp;
+    if (event.timestamp && event.timestamp.includes('T')) {
+        displayTime = new Date(event.timestamp).toLocaleString();
     }
     
     eventItem.innerHTML = `
@@ -848,20 +896,31 @@ function addEventToFeed(event) {
             <i class="${iconSymbol}"></i>
         </div>
         <div class="event-details">
-            <div class="event-type">${event.type.replace('_', ' ').toUpperCase()}</div>
+            <div class="event-type">${eventType.replace('_', ' ').toUpperCase()}</div>
             <div class="event-description">${event.description}</div>
         </div>
-        <div class="event-time">${event.timestamp}</div>
+        <div class="event-time">${displayTime}</div>
     `;
     
     eventList.insertBefore(eventItem, eventList.firstChild);
     eventCount++;
+    
+    // Add animation for new event
+    eventItem.style.opacity = '0';
+    eventItem.style.transform = 'translateX(-20px)';
+    setTimeout(() => {
+        eventItem.style.transition = 'all 0.3s ease';
+        eventItem.style.opacity = '1';
+        eventItem.style.transform = 'translateX(0)';
+    }, 100);
     
     // Remove old events to prevent overflow
     const items = eventList.querySelectorAll('.event-item');
     if (items.length > 10) {
         items[items.length - 1].remove();
     }
+    
+    console.log('✅ Event added to dashboard feed:', eventType);
 }
 
 function showTimerModal() {
@@ -1023,6 +1082,45 @@ function testSystem() {
     }, 3000);
 }
 
+function triggerTestEvent() {
+    const btn = event.target.closest('.control-btn');
+    const originalContent = btn.innerHTML;
+    
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>TESTING...</span>';
+    btn.style.pointerEvents = 'none';
+    
+    // Generate random test event
+    const eventTypes = ['door_open', 'door_close', 'alarm_triggered'];
+    const randomEvent = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+    
+    fetch('/api/test-event', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            event_type: randomEvent,
+            description: `Manual test event: ${randomEvent.replace('_', ' ')}`
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`Test event triggered: ${randomEvent.replace('_', ' ').toUpperCase()}`, 'success');
+        } else {
+            showNotification('Test event failed: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error triggering test event:', error);
+        showNotification('Test event failed: ' + error.message, 'error');
+    })
+    .finally(() => {
+        btn.innerHTML = originalContent;
+        btn.style.pointerEvents = 'auto';
+    });
+}
+
 function showNotification(message, type) {
     const notification = document.createElement('div');
     notification.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} position-fixed`;
@@ -1040,6 +1138,42 @@ function showNotification(message, type) {
             setTimeout(() => notification.remove(), 300);
         }
     }, 5000);
+}
+
+function manualRefresh() {
+    console.log('🔄 Manual refresh triggered');
+    showNotification('Refreshing dashboard data...', 'info');
+    
+    // Reload recent events
+    loadRecentEvents();
+    
+    // Refresh statistics
+    fetch('/api/statistics')
+        .then(response => response.json())
+        .then(data => {
+            // Update statistics on the page
+            const totalEventsEl = document.getElementById('total-events');
+            const doorOpenEventsEl = document.getElementById('door-open-events');
+            const doorCloseEventsEl = document.getElementById('door-close-events');
+            const alarmEventsEl = document.getElementById('alarm-events');
+            
+            if (totalEventsEl) totalEventsEl.textContent = data.total_events || 0;
+            if (doorOpenEventsEl) doorOpenEventsEl.textContent = data.door_open_events || 0;
+            if (doorCloseEventsEl) doorCloseEventsEl.textContent = data.door_close_events || 0;
+            if (alarmEventsEl) alarmEventsEl.textContent = data.alarm_events || 0;
+            
+            showNotification('Dashboard refreshed successfully!', 'success');
+        })
+        .catch(error => {
+            console.error('Error refreshing statistics:', error);
+            showNotification('Failed to refresh statistics', 'error');
+        });
+    
+    // Force WebSocket reconnection if needed
+    if (window.dashboardSocket && window.dashboardSocket.disconnected) {
+        console.log('🔄 Reconnecting WebSocket...');
+        window.dashboardSocket.connect();
+    }
 }
 
 // Initialize dashboard

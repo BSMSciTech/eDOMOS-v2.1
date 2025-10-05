@@ -296,7 +296,65 @@
                 localStorage.setItem('theme', 'light');
             }
             applyTheme(savedTheme);
+            
+            // Browser-specific fixes for Chromium and other browsers
+            detectBrowserAndApplyFixes();
         });
+        
+        // Browser detection and compatibility fixes
+        function detectBrowserAndApplyFixes() {
+            const isChromium = window.chrome && window.chrome.runtime;
+            const isFirefox = typeof InstallTrigger !== 'undefined';
+            const isEdge = window.navigator.userAgent.indexOf('Edge') > -1;
+            
+            console.log('🌐 Browser detection:', {
+                chromium: isChromium,
+                firefox: isFirefox,
+                edge: isEdge
+            });
+            
+            // Chromium-specific fixes for caching and WebSocket issues
+            if (isChromium) {
+                console.log('🔧 Applying Chromium-specific fixes...');
+                
+                // Force cache refresh for API calls
+                const originalFetch = window.fetch;
+                window.fetch = function(url, options = {}) {
+                    if (url.includes('/api/') || url.includes('/statistics')) {
+                        const separator = url.includes('?') ? '&' : '?';
+                        url += separator + '_t=' + Date.now();
+                    }
+                    return originalFetch(url, options);
+                };
+                
+                // Add periodic cache clear for WebSocket stability
+                setInterval(() => {
+                    if ('caches' in window) {
+                        caches.keys().then(names => {
+                            names.forEach(name => {
+                                if (name.includes('socket') || name.includes('api')) {
+                                    caches.delete(name);
+                                }
+                            });
+                        });
+                    }
+                }, 300000); // Every 5 minutes
+            }
+            
+            // Add manual refresh helper function
+            window.forcePageRefresh = function() {
+                console.log('🔄 Force refreshing page...');
+                window.location.reload(true); // Force reload from server
+            };
+            
+            // Add keyboard shortcut for manual refresh (Ctrl+Shift+R)
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+                    e.preventDefault();
+                    window.forcePageRefresh();
+                }
+            });
+        }
     </script>
     
     <!-- Socket.IO for real-time events -->

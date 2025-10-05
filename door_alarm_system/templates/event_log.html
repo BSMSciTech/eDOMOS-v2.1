@@ -117,5 +117,418 @@
     </div>
 </div>
 
+<!-- Auto-Refresh Event Log Table Component -->
+<div id="refresh-indicator" class="alert alert-info mb-3" style="display: none;">
+    <div class="d-flex align-items-center">
+        <div class="spinner-border spinner-border-sm me-2" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <span>Auto-refreshing event log...</span>
+        <button type="button" class="btn btn-sm btn-outline-info ms-auto" onclick="toggleAutoRefresh()">
+            <span id="refresh-toggle-text">Pause</span>
+        </button>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h6 class="mb-0">
+                    <i class="fas fa-sync-alt me-2"></i>Real-Time Event Log
+                    <span id="live-indicator" class="badge bg-success ms-2">
+                        <i class="fas fa-circle" style="font-size: 8px;"></i> LIVE
+                    </span>
+                </h6>
+                <small class="text-muted">Auto-refreshes every 3 seconds • Last update: <span id="last-update">Never</span></small>
+            </div>
+            <div class="col-md-4 text-end">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="manualRefresh()">
+                    <i class="fas fa-refresh me-1"></i>Refresh Now
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleAutoRefresh()">
+                    <i class="fas fa-pause me-1" id="toggle-icon"></i>
+                    <span id="toggle-text">Pause Auto-Refresh</span>
+                </button>
+                {% if current_user.is_admin %}
+                <div class="btn-group ms-2" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-warning" onclick="testDoorOpen()">
+                        <i class="fas fa-door-open me-1"></i>Test Door Open
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-success" onclick="testDoorClose()">
+                        <i class="fas fa-door-closed me-1"></i>Test Door Close
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="testAlarm()">
+                        <i class="fas fa-exclamation-triangle me-1"></i>Test Alarm
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Event Log Auto-Refresh Component
+class EventLogAutoRefresh {
+    constructor() {
+        this.refreshInterval = null;
+        this.refreshRate = 3000; // 3 seconds
+        this.isAutoRefreshEnabled = true;
+        this.lastEventId = 0;
+        this.newEventsCount = 0;
+        this.init();
+    }
+    
+    init() {
+        console.log('🔄 Event Log Auto-Refresh Component Initialized');
+        console.log('  ├─ Refresh Rate: 3 seconds');
+        console.log('  ├─ Auto-refresh: ENABLED');
+        console.log('  └─ Monitoring for new events...');
+        
+        this.getCurrentEventId();
+        this.startAutoRefresh();
+        this.setupWebSocketFallback();
+        this.updateLastRefreshTime();
+    }
+    
+    getCurrentEventId() {
+        const rows = document.querySelectorAll('#eventTableBody tr[data-event-id]');
+        if (rows.length > 0) {
+            const firstRow = rows[0];
+            const eventId = parseInt(firstRow.getAttribute('data-event-id'));
+            this.lastEventId = eventId || 0;
+            console.log('📊 Current latest event ID:', this.lastEventId);
+        }
+    }
+    
+    startAutoRefresh() {
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval);
+        }
+        
+        this.refreshInterval = setInterval(() => {
+            if (this.isAutoRefreshEnabled) {
+                this.checkForNewEvents();
+            }
+        }, this.refreshRate);
+        
+        console.log('✅ Auto-refresh started (every 3 seconds)');
+        this.updateLiveIndicator(true);
+    }
+    
+    stopAutoRefresh() {
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval);
+            this.refreshInterval = null;
+        }
+        console.log('⏸️ Auto-refresh paused');
+        this.updateLiveIndicator(false);
+    }
+    
+    async checkForNewEvents() {
+        try {
+            console.log('🔍 Checking for new events since ID:', this.lastEventId);
+            
+            const response = await fetch(`/api/events?since=${this.lastEventId}&per_page=50`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.events && data.events.length > 0) {
+                console.log(`📥 Found ${data.events.length} new events`);
+                this.processNewEvents(data.events);
+                this.newEventsCount += data.events.length;
+                
+                // Show notification
+                this.showNewEventsNotification(data.events.length);
+            } else {
+                console.log('📋 No new events found');
+            }
+            
+            this.updateLastRefreshTime();
+            
+        } catch (error) {
+            console.error('❌ Error checking for new events:', error);
+            this.handleRefreshError(error);
+        }
+    }
+    
+    processNewEvents(events) {
+        const tbody = document.getElementById('eventTableBody');
+        if (!tbody) {
+            console.error('❌ Event table body not found');
+            return;
+        }
+        
+        // Sort events by ID (newest first)
+        events.sort((a, b) => b.id - a.id);
+        
+        events.forEach(event => {
+            if (event.id > this.lastEventId) {
+                this.addEventToTable(event);
+                this.lastEventId = Math.max(this.lastEventId, event.id);
+            }
+        });
+        
+        // Remove excess rows (keep only first 100)
+        const rows = tbody.querySelectorAll('tr[data-event-id]');
+        if (rows.length > 100) {
+            for (let i = 100; i < rows.length; i++) {
+                rows[i].remove();
+            }
+        }
+        
+        console.log('✅ Processed new events, latest ID:', this.lastEventId);
+    }
+    
+    addEventToTable(event) {
+        const tbody = document.getElementById('eventTableBody');
+        
+        // Create badge based on event type
+        let badge = this.createEventBadge(event.event_type);
+        
+        // Create new row with highlight
+        const newRow = document.createElement('tr');
+        newRow.className = 'table-success animate__animated animate__fadeInDown';
+        newRow.setAttribute('data-event-id', event.id);
+        newRow.innerHTML = `
+            <td><span class="event-id">#${event.id}</span></td>
+            <td>${badge}</td>
+            <td class="event-description">${event.description}</td>
+            <td class="event-timestamp">
+                <i class="fas fa-clock me-1 opacity-50"></i>
+                ${new Date(event.timestamp).toLocaleString()}
+                <small class="badge bg-primary ms-2">NEW</small>
+            </td>
+        `;
+        
+        // Insert at the top of the table
+        tbody.insertBefore(newRow, tbody.firstChild);
+        
+        // Remove highlight and "NEW" badge after 5 seconds
+        setTimeout(() => {
+            newRow.classList.remove('table-success', 'animate__animated', 'animate__fadeInDown');
+            const newBadge = newRow.querySelector('.badge.bg-primary');
+            if (newBadge) {
+                newBadge.remove();
+            }
+        }, 5000);
+        
+        console.log('➕ Added new event to table:', event.event_type, 'ID:', event.id);
+    }
+    
+    createEventBadge(eventType) {
+        const badges = {
+            'door_open': '<span class="badge bg-info"><i class="fas fa-door-open me-1"></i>Door Open</span>',
+            'door_close': '<span class="badge bg-success"><i class="fas fa-door-closed me-1"></i>Door Close</span>',
+            'alarm_triggered': '<span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>Alarm Triggered</span>'
+        };
+        
+        return badges[eventType] || `<span class="badge bg-secondary"><i class="fas fa-info-circle me-1"></i>${eventType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>`;
+    }
+    
+    showNewEventsNotification(count) {
+        // Update page title
+        document.title = `🔴 ${count} New Event${count > 1 ? 's' : ''} - Event Log`;
+        setTimeout(() => {
+            document.title = 'Event Log';
+        }, 5000);
+        
+        // Show toast notification if available
+        if (typeof showNotification === 'function') {
+            showNotification(`📥 ${count} new event${count > 1 ? 's' : ''} added to log`, 'success', 3000);
+        }
+    }
+    
+    updateLastRefreshTime() {
+        const lastUpdateEl = document.getElementById('last-update');
+        if (lastUpdateEl) {
+            lastUpdateEl.textContent = new Date().toLocaleTimeString();
+        }
+    }
+    
+    updateLiveIndicator(isLive) {
+        const indicator = document.getElementById('live-indicator');
+        if (indicator) {
+            if (isLive) {
+                indicator.className = 'badge bg-success ms-2';
+                indicator.innerHTML = '<i class="fas fa-circle" style="font-size: 8px;"></i> LIVE';
+            } else {
+                indicator.className = 'badge bg-warning ms-2';
+                indicator.innerHTML = '<i class="fas fa-pause" style="font-size: 8px;"></i> PAUSED';
+            }
+        }
+    }
+    
+    handleRefreshError(error) {
+        const indicator = document.getElementById('live-indicator');
+        if (indicator) {
+            indicator.className = 'badge bg-danger ms-2';
+            indicator.innerHTML = '<i class="fas fa-exclamation-triangle" style="font-size: 8px;"></i> ERROR';
+        }
+        
+        // Try to restart after 10 seconds
+        setTimeout(() => {
+            if (this.isAutoRefreshEnabled) {
+                this.startAutoRefresh();
+            }
+        }, 10000);
+    }
+    
+    setupWebSocketFallback() {
+        // Use WebSocket as primary, polling as fallback
+        if (typeof socket !== 'undefined' && socket) {
+            socket.on('new_event', (data) => {
+                console.log('📡 WebSocket event received, processing immediately...');
+                if (data.event) {
+                    this.addEventToTable(data.event);
+                    this.lastEventId = Math.max(this.lastEventId, data.event.id);
+                }
+            });
+            
+            socket.on('disconnect', () => {
+                console.log('🔄 WebSocket disconnected, relying on polling');
+                this.updateLiveIndicator(true); // Still live via polling
+            });
+        }
+    }
+    
+    toggle() {
+        this.isAutoRefreshEnabled = !this.isAutoRefreshEnabled;
+        
+        if (this.isAutoRefreshEnabled) {
+            this.startAutoRefresh();
+        } else {
+            this.stopAutoRefresh();
+        }
+        
+        this.updateToggleButton();
+    }
+    
+    updateToggleButton() {
+        const toggleText = document.getElementById('toggle-text');
+        const toggleIcon = document.getElementById('toggle-icon');
+        
+        if (toggleText && toggleIcon) {
+            if (this.isAutoRefreshEnabled) {
+                toggleText.textContent = 'Pause Auto-Refresh';
+                toggleIcon.className = 'fas fa-pause me-1';
+            } else {
+                toggleText.textContent = 'Resume Auto-Refresh';
+                toggleIcon.className = 'fas fa-play me-1';
+            }
+        }
+    }
+    
+    async manualRefresh() {
+        console.log('🔄 Manual refresh triggered');
+        await this.checkForNewEvents();
+        
+        // Show manual refresh feedback
+        const refreshBtn = document.querySelector('button[onclick="manualRefresh()"]');
+        if (refreshBtn) {
+            const originalHtml = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '<i class="fas fa-check me-1"></i>Refreshed!';
+            refreshBtn.classList.add('btn-outline-success');
+            refreshBtn.classList.remove('btn-outline-primary');
+            
+            setTimeout(() => {
+                refreshBtn.innerHTML = originalHtml;
+                refreshBtn.classList.remove('btn-outline-success');
+                refreshBtn.classList.add('btn-outline-primary');
+            }, 2000);
+        }
+    }
+}
+
+// Global functions for button controls
+let eventLogRefresh;
+
+function toggleAutoRefresh() {
+    if (eventLogRefresh) {
+        eventLogRefresh.toggle();
+    }
+}
+
+function manualRefresh() {
+    if (eventLogRefresh) {
+        eventLogRefresh.manualRefresh();
+    }
+}
+
+// Test event functions for admin users
+async function testDoorOpen() {
+    await testEvent('door_open', 'Test door open event - Manual trigger from Event Log page');
+}
+
+async function testDoorClose() {
+    await testEvent('door_close', 'Test door close event - Manual trigger from Event Log page');
+}
+
+async function testAlarm() {
+    await testEvent('alarm_triggered', 'Test alarm triggered event - Manual trigger from Event Log page');
+}
+
+async function testEvent(eventType, description) {
+    try {
+        console.log(`🧪 Testing event: ${eventType}`);
+        
+        const response = await fetch('/api/test-event', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                event_type: eventType,
+                description: description
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            console.log('✅ Test event created:', result.message);
+            
+            // Show success notification
+            if (typeof showNotification === 'function') {
+                showNotification(`✅ ${result.message}`, 'success', 3000);
+            }
+            
+            // Manual refresh to show the new event immediately
+            setTimeout(() => {
+                if (eventLogRefresh) {
+                    eventLogRefresh.checkForNewEvents();
+                }
+            }, 500);
+            
+        } else {
+            console.error('❌ Test event failed:', result.error);
+            alert('Failed to create test event: ' + result.error);
+        }
+        
+    } catch (error) {
+        console.error('❌ Error creating test event:', error);
+        alert('Error creating test event: ' + error.message);
+    }
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Event Log page loaded with Auto-Refresh Component');
+    
+    // Initialize the auto-refresh component
+    eventLogRefresh = new EventLogAutoRefresh();
+    
+    // Make it globally accessible for debugging
+    window.eventLogRefresh = eventLogRefresh;
+    
+    console.log('✅ Auto-refresh component ready');
+    console.log('📋 Use eventLogRefresh.toggle() to control auto-refresh from console');
+});
+</script>
+
 <!-- Socket.IO is loaded by base template, real-time updates handled by socket.js -->
 {% endblock %}
