@@ -2636,3 +2636,1535 @@ body::before {
         font-size: 0.85rem !important;
     }
 }
+
+/* Clean Event Table Layout for Proper Column Alignment */
+#eventsTable {
+    width: 100% !important;
+    margin-bottom: 0 !important;
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+    font-family: 'Inter', sans-serif !important;
+    table-layout: fixed !important;
+}
+
+/* Enhanced Event Log Table Container */
+.event-log-main-card {
+    background: rgba(15, 23, 42, 0.95) !important;
+    backdrop-filter: blur(25px);
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 24px !important;
+    box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.event-log-main-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 
+        0 40px 80px -12px rgba(0, 0, 0, 0.7),
+        0 0 0 1px rgba(255, 255, 255, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Event Log Table Header */
+.event-log-header {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(6, 182, 212, 0.9)) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+    padding: 1.75rem 2rem !important;
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: white !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.event-log-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.08) 0%, transparent 40%);
+    animation: headerShimmer 8s ease-in-out infinite;
+}
+
+@keyframes headerShimmer {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+}
+
+.event-log-header h5 {
+    position: relative;
+    z-index: 2;
+    margin: 0;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    letter-spacing: 0.5px;
+}
+
+.event-log-header i {
+    color: rgba(255, 255, 255, 0.9);
+    margin-right: 0.75rem;
+    font-size: 1.1em;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Event Log Table Body */
+.event-log-body {
+    background: rgba(15, 23, 42, 0.98) !important;
+    padding: 0 !important;
+    position: relative;
+}
+
+.event-log-body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.03) 0%, transparent 50%),
+        radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+/* Professional Event Table */
+.event-table-container {
+    position: relative;
+    z-index: 1;
+    padding: 1.5rem;
+}
+
+#eventsTable {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+#eventsTable thead {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(51, 65, 85, 0.9)) !important;
+    border: none;
+}
+
+#eventsTable thead th {
+    background: transparent !important;
+    border: none !important;
+    color: rgba(248, 250, 252, 0.95) !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.8px !important;
+    padding: 1.25rem 1.5rem !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    position: relative;
+}
+
+#eventsTable thead th:first-child {
+    border-top-left-radius: 16px;
+}
+
+#eventsTable thead th:last-child {
+    border-top-right-radius: 16px;
+}
+
+#eventsTable thead th::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+}
+
+#eventsTable tbody {
+    background: rgba(15, 23, 42, 0.6) !important;
+}
+
+#eventsTable tbody tr {
+    background: rgba(30, 41, 59, 0.4) !important;
+    border: none !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+#eventsTable tbody tr:hover {
+    background: rgba(30, 41, 59, 0.8) !important;
+    transform: translateX(8px);
+    box-shadow: 
+        0 8px 25px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+#eventsTable tbody tr:nth-child(even) {
+    background: rgba(30, 41, 59, 0.3) !important;
+}
+
+#eventsTable tbody tr:nth-child(even):hover {
+    background: rgba(30, 41, 59, 0.7) !important;
+}
+
+#eventsTable tbody td {
+    border: none !important;
+    color: rgba(248, 250, 252, 0.9) !important;
+    font-weight: 500 !important;
+    padding: 1.25rem 1.5rem !important;
+    font-size: 0.95rem !important;
+    vertical-align: middle !important;
+    position: relative;
+}
+
+#eventsTable tbody td:first-child {
+    font-weight: 700 !important;
+    color: rgba(6, 182, 212, 0.9) !important;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* Enhanced Badge Styling for Event Types */
+#eventsTable .badge {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    border-radius: 20px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    transition: all 0.3s ease !important;
+}
+
+#eventsTable .badge::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.6s ease;
+}
+
+#eventsTable .badge:hover::before {
+    left: 100%;
+}
+
+#eventsTable .badge.bg-info {
+    background: linear-gradient(135deg, #06b6d4, #0891b2) !important;
+    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4) !important;
+}
+
+#eventsTable .badge.bg-success {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4) !important;
+}
+
+#eventsTable .badge.bg-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4) !important;
+}
+
+#eventsTable .badge.bg-secondary {
+    background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+    box-shadow: 0 4px 15px rgba(107, 114, 128, 0.4) !important;
+}
+
+/* Professional Pagination Styling */
+.event-pagination {
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(15px);
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pagination {
+    margin: 0 !important;
+}
+
+.pagination .page-item .page-link {
+    background: rgba(30, 41, 59, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: rgba(248, 250, 252, 0.8) !important;
+    padding: 0.75rem 1.25rem !important;
+    margin: 0 0.25rem !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    backdrop-filter: blur(10px);
+}
+
+.pagination .page-item .page-link:hover {
+    background: rgba(59, 130, 246, 0.8) !important;
+    border-color: rgba(59, 130, 246, 0.6) !important;
+    color: white !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3) !important;
+}
+
+.pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #3b82f6, #06b6d4) !important;
+    border-color: rgba(59, 130, 246, 0.8) !important;
+    color: white !important;
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4) !important;
+    transform: translateY(-1px);
+}
+
+/* Light Theme Overrides for Event Log */
+[data-theme="light"] .event-log-main-card {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(0, 0, 0, 0.02),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+[data-theme="light"] .event-log-header {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+    color: white !important;
+}
+
+[data-theme="light"] .event-log-body {
+    background: rgba(248, 250, 252, 0.95) !important;
+}
+
+[data-theme="light"] .event-log-body::before {
+    background: 
+        radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+}
+
+[data-theme="light"] #eventsTable thead {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(29, 78, 216, 0.9)) !important;
+}
+
+[data-theme="light"] #eventsTable thead th {
+    color: white !important;
+}
+
+[data-theme="light"] #eventsTable tbody {
+    background: rgba(248, 250, 252, 0.8) !important;
+}
+
+[data-theme="light"] #eventsTable tbody tr {
+    background: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-theme="light"] #eventsTable tbody tr:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+    box-shadow: 
+        0 8px 25px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(59, 130, 246, 0.1);
+}
+
+[data-theme="light"] #eventsTable tbody tr:nth-child(even) {
+    background: rgba(248, 250, 252, 0.9) !important;
+}
+
+[data-theme="light"] #eventsTable tbody tr:nth-child(even):hover {
+    background: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="light"] #eventsTable tbody td {
+    color: rgba(31, 41, 55, 0.9) !important;
+}
+
+[data-theme="light"] #eventsTable tbody td:first-child {
+    color: rgba(59, 130, 246, 0.9) !important;
+}
+
+[data-theme="light"] .event-pagination {
+    background: rgba(248, 250, 252, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .pagination .page-item .page-link {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    color: rgba(31, 41, 55, 0.8) !important;
+}
+
+[data-theme="light"] .pagination .page-item .page-link:hover {
+    background: rgba(59, 130, 246, 0.9) !important;
+    border-color: rgba(59, 130, 246, 0.6) !important;
+    color: white !important;
+}
+
+[data-theme="light"] .pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+    border-color: rgba(59, 130, 246, 0.8) !important;
+    color: white !important;
+}
+
+/* Responsive Design for Event Log */
+@media (max-width: 768px) {
+    .event-log-header-section {
+        padding: 2rem 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .event-header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 1.5rem;
+    }
+    
+    .event-title {
+        font-size: 2rem;
+    }
+    
+    .event-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+    }
+    
+    .event-table-container {
+        padding: 1rem;
+    }
+    
+    #eventsTable thead th,
+    #eventsTable tbody td {
+        padding: 1rem 0.75rem !important;
+        font-size: 0.85rem !important;
+    }
+    
+    .pagination .page-item .page-link {
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.85rem !important;
+    }
+    
+    .event-pagination {
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+}
+
+/* Smooth Loading Animation for Table Rows */
+@keyframes tableRowFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#eventsTable tbody tr {
+    animation: tableRowFadeIn 0.5s ease-out;
+}
+
+#eventsTable tbody tr:nth-child(1) { animation-delay: 0.1s; }
+#eventsTable tbody tr:nth-child(2) { animation-delay: 0.15s; }
+#eventsTable tbody tr:nth-child(3) { animation-delay: 0.2s; }
+#eventsTable tbody tr:nth-child(4) { animation-delay: 0.25s; }
+#eventsTable tbody tr:nth-child(5) { animation-delay: 0.3s; }
+
+/* Enhanced Mobile Responsiveness for Event Log */
+@media (max-width: 992px) {
+    .event-table-container {
+        padding: 1rem;
+        overflow-x: auto;
+    }
+    
+    #eventsTable {
+        min-width: 700px;
+        font-size: 0.9rem;
+    }
+    
+    .event-log-header-section {
+        padding: 2rem 1rem;
+    }
+    
+    .event-header-content {
+        gap: 1.5rem;
+    }
+    
+    .event-title {
+        font-size: 2.2rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .event-log-header-section {
+        padding: 1.5rem 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .event-header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .event-title {
+        font-size: 1.8rem;
+        letter-spacing: 1px;
+    }
+    
+    .event-subtitle {
+        font-size: 1rem;
+    }
+    
+    .event-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+    
+    .event-table-container {
+        padding: 0.5rem;
+        margin: 0 -0.5rem;
+    }
+    
+    #eventsTable {
+        min-width: 600px;
+        font-size: 0.8rem;
+    }
+    
+    #eventsTable thead th,
+    #eventsTable tbody td {
+        padding: 0.75rem 0.5rem !important;
+        font-size: 0.8rem !important;
+    }
+    
+    .pagination .page-item .page-link {
+        padding: 0.4rem 0.6rem !important;
+        font-size: 0.8rem !important;
+        margin: 0 0.1rem !important;
+    }
+    
+    .event-pagination {
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+}
+
+/* Enhanced Real-time Row Animation */
+.new-event-row {
+    animation: newEventSlideIn 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(16, 185, 129, 0.2) !important;
+    border-left: 4px solid #10b981 !important;
+}
+
+@keyframes newEventSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateX(-100%) scale(0.95);
+        background: rgba(16, 185, 129, 0.4);
+    }
+    50% {
+        background: rgba(16, 185, 129, 0.3);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+        background: rgba(16, 185, 129, 0.2);
+    }
+}
+
+/* Professional Loading State */
+.event-table-loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.event-table-loading::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    animation: loadingShimmer 2s infinite;
+    z-index: 1000;
+}
+
+@keyframes loadingShimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Enhanced Badge Hover Effects */
+#eventsTable .badge:hover {
+    transform: scale(1.05);
+    z-index: 10;
+    position: relative;
+}
+
+/* Professional Table Header Sorting Indicators */
+#eventsTable thead th {
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+}
+
+#eventsTable thead th:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+#eventsTable thead th::after {
+    content: '↕️';
+    position: absolute;
+    right: 1rem;
+    opacity: 0.3;
+    font-size: 0.8rem;
+    transition: opacity 0.3s ease;
+}
+
+#eventsTable thead th:hover::after {
+    opacity: 0.7;
+}
+
+/* Enhanced Row Selection Effect */
+#eventsTable tbody tr {
+    cursor: pointer;
+}
+
+#eventsTable tbody tr:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+}
+
+/* Professional Empty State */
+.event-log-empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: rgba(30, 41, 59, 0.3);
+    border-radius: 16px;
+    margin: 2rem 0;
+}
+
+.event-log-empty-icon {
+    font-size: 4rem;
+    color: rgba(107, 114, 128, 0.5);
+    margin-bottom: 1rem;
+}
+
+.event-log-empty-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: rgba(248, 250, 252, 0.8);
+    margin-bottom: 0.5rem;
+}
+
+.event-log-empty-subtitle {
+    color: rgba(248, 250, 252, 0.6);
+    font-size: 1rem;
+}
+
+[data-theme="light"] .event-log-empty {
+    background: rgba(248, 250, 252, 0.8);
+}
+
+[data-theme="light"] .event-log-empty-title {
+    color: rgba(31, 41, 55, 0.8);
+}
+
+[data-theme="light"] .event-log-empty-subtitle {
+    color: rgba(31, 41, 55, 0.6);
+}
+
+/* Enhanced Scroll Bar Styling */
+.event-table-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.event-table-container::-webkit-scrollbar-track {
+    background: rgba(30, 41, 59, 0.3);
+    border-radius: 10px;
+}
+
+.event-table-container::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #3b82f6, #06b6d4);
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
+}
+
+.event-table-container::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #2563eb, #0891b2);
+}
+
+[data-theme="light"] .event-table-container::-webkit-scrollbar-track {
+    background: rgba(248, 250, 252, 0.8);
+}
+
+/* Professional Toast Notification for New Events */
+.event-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+    z-index: 9999;
+    transform: translateX(400px);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.event-toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.event-toast.hide {
+    transform: translateX(400px);
+    opacity: 0;
+}
+
+.event-toast-icon {
+    font-size: 1.2rem;
+    margin-right: 0.75rem;
+}
+
+.event-toast-content {
+    display: flex;
+    align-items: center;
+}
+
+.event-toast-text {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+/* Aggressive Bootstrap Override for Event Log - Remove ALL White Backgrounds */
+#eventsTable,
+#eventsTable *,
+.event-log-main-card .table,
+.event-log-main-card .table *,
+.table-responsive,
+.table-responsive * {
+    background-color: transparent !important;
+    background: transparent !important;
+}
+
+/* Force Event Table Background to Dark */
+#eventsTable {
+    background: rgba(15, 23, 42, 0.95) !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+}
+
+#eventsTable tbody tr {
+    background: rgba(30, 41, 59, 0.6) !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+#eventsTable tbody tr:hover {
+    background: rgba(30, 41, 59, 0.9) !important;
+}
+
+#eventsTable tbody tr:nth-child(even) {
+    background: rgba(30, 41, 59, 0.4) !important;
+}
+
+#eventsTable tbody tr:nth-child(even):hover {
+    background: rgba(30, 41, 59, 0.8) !important;
+}
+
+#eventsTable tbody td {
+    background: transparent !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Light Theme Force Overrides */
+[data-theme="light"] #eventsTable {
+    background: rgba(248, 250, 252, 0.95) !important;
+}
+
+[data-theme="light"] #eventsTable tbody tr {
+    background: rgba(255, 255, 255, 0.8) !important;
+}
+
+[data-theme="light"] #eventsTable tbody tr:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="light"] #eventsTable tbody tr:nth-child(even) {
+    background: rgba(248, 250, 252, 0.9) !important;
+}
+
+[data-theme="light"] #eventsTable tbody tr:nth-child(even):hover {
+    background: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="light"] #eventsTable tbody td {
+    background: transparent !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Remove any Bootstrap table striping */
+.table-striped > tbody > tr:nth-of-type(odd) > td,
+.table-striped > tbody > tr:nth-of-type(odd) > th {
+    background-color: transparent !important;
+}
+
+.table-striped > tbody > tr:nth-of-type(even) > td,
+.table-striped > tbody > tr:nth-of-type(even) > th {
+    background-color: transparent !important;
+}
+
+/* Remove Bootstrap hover effects */
+.table-hover > tbody > tr:hover > td,
+.table-hover > tbody > tr:hover > th {
+    background-color: transparent !important;
+}
+
+/* Perfect Column Alignment for Event Log Table */
+#eventsTable thead th {
+    text-align: left !important;
+    position: relative !important;
+    white-space: nowrap !important;
+}
+
+#eventsTable thead th:first-child {
+    text-align: center !important;
+    width: 15% !important;
+}
+
+#eventsTable thead th:nth-child(2) {
+    text-align: center !important;
+    width: 25% !important;
+}
+
+#eventsTable thead th:nth-child(3) {
+    text-align: left !important;
+    width: 40% !important;
+}
+
+#eventsTable thead th:nth-child(4) {
+    text-align: center !important;
+    width: 20% !important;
+}
+
+/* Enhanced Data Cell Alignment */
+#eventsTable tbody td {
+    vertical-align: middle !important;
+    text-align: left !important;
+}
+
+#eventsTable tbody td:first-child {
+    text-align: center !important;
+    font-weight: 700 !important;
+    width: 15% !important;
+}
+
+#eventsTable tbody td:nth-child(2) {
+    text-align: center !important;
+    width: 25% !important;
+}
+
+#eventsTable tbody td:nth-child(3) {
+    text-align: left !important;
+    padding-left: 1.5rem !important;
+    width: 40% !important;
+}
+
+#eventsTable tbody td:nth-child(4) {
+    text-align: center !important;
+    width: 20% !important;
+}
+
+/* Professional ID Styling */
+.event-id {
+    display: inline-block !important;
+    background: linear-gradient(135deg, #06b6d4, #3b82f6) !important;
+    color: white !important;
+    padding: 0.4rem 0.8rem !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    letter-spacing: 0.5px !important;
+    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3) !important;
+    transition: all 0.3s ease !important;
+}
+
+.event-id:hover {
+    transform: scale(1.05) !important;
+    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.5) !important;
+}
+
+/* Enhanced Description Styling */
+.event-description {
+    font-weight: 500 !important;
+    line-height: 1.4 !important;
+    color: rgba(248, 250, 252, 0.9) !important;
+}
+
+/* Professional Timestamp Styling */
+.event-timestamp {
+    font-family: 'JetBrains Mono', monospace !important;
+    color: rgba(248, 250, 252, 0.8) !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+}
+
+.event-timestamp i {
+    color: rgba(6, 182, 212, 0.7) !important;
+    font-size: 0.8rem !important;
+}
+
+/* Enhanced Badge Positioning */
+#eventsTable .badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 120px !important;
+    white-space: nowrap !important;
+}
+
+/* Light Theme Column Styling */
+[data-theme="light"] .event-id {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+    color: white !important;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3) !important;
+}
+
+[data-theme="light"] .event-id:hover {
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.5) !important;
+}
+
+[data-theme="light"] .event-description {
+    color: rgba(31, 41, 55, 0.9) !important;
+}
+
+[data-theme="light"] .event-timestamp {
+    color: rgba(31, 41, 55, 0.8) !important;
+}
+
+[data-theme="light"] .event-timestamp i {
+    color: rgba(59, 130, 246, 0.7) !important;
+}
+
+/* Column Header Icons for Better Visual Organization */
+#eventsTable thead th:first-child::before {
+    content: '🆔 ';
+    margin-right: 0.5rem;
+    opacity: 0.8;
+}
+
+#eventsTable thead th:nth-child(2)::before {
+    content: '🏷️ ';
+    margin-right: 0.5rem;
+    opacity: 0.8;
+}
+
+#eventsTable thead th:nth-child(3)::before {
+    content: '📝 ';
+    margin-right: 0.5rem;
+    opacity: 0.8;
+}
+
+#eventsTable thead th:nth-child(4)::before {
+    content: '🕒 ';
+    margin-right: 0.5rem;
+    opacity: 0.8;
+}
+
+/* Responsive Column Adjustments */
+@media (max-width: 768px) {
+    #eventsTable thead th:first-child {
+        width: 60px !important;
+    }
+    
+    #eventsTable thead th:nth-child(2) {
+        width: 140px !important;
+    }
+    
+    #eventsTable thead th:nth-child(4) {
+        width: 180px !important;
+    }
+    
+    .event-id {
+        padding: 0.3rem 0.6rem !important;
+        font-size: 0.8rem !important;
+    }
+    
+    #eventsTable .badge {
+        min-width: 100px !important;
+        font-size: 0.75rem !important;
+        padding: 0.4rem 0.8rem !important;
+    }
+    
+    .event-timestamp {
+        font-size: 0.85rem !important;
+    }
+}
+
+/* Enhanced Column Visual Separation */
+#eventsTable thead th:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 25%;
+    bottom: 25%;
+    width: 1px;
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+}
+
+#eventsTable tbody td:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 20%;
+    bottom: 20%;
+    width: 1px;
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+}
+
+/* Enhanced Row Organization */
+#eventsTable tbody tr {
+    border-left: 3px solid transparent !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+#eventsTable tbody tr:hover {
+    border-left: 3px solid #06b6d4 !important;
+}
+
+/* Perfect Data Organization Styling */
+#eventsTable tbody tr td:first-child {
+    background: rgba(6, 182, 212, 0.05) !important;
+}
+
+#eventsTable tbody tr td:nth-child(2) {
+    background: rgba(16, 185, 129, 0.05) !important;
+}
+
+#eventsTable tbody tr td:nth-child(4) {
+    background: rgba(59, 130, 246, 0.05) !important;
+}
+
+/* Light Theme Column Backgrounds */
+[data-theme="light"] #eventsTable tbody tr td:first-child {
+    background: rgba(59, 130, 246, 0.08) !important;
+}
+
+[data-theme="light"] #eventsTable tbody tr td:nth-child(2) {
+    background: rgba(16, 185, 129, 0.08) !important;
+}
+
+[data-theme="light"] #eventsTable tbody tr td:nth-child(4) {
+    background: rgba(59, 130, 246, 0.08) !important;
+}
+
+[data-theme="light"] #eventsTable thead th:not(:last-child)::after {
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        rgba(255, 255, 255, 0.6),
+        transparent
+    );
+}
+
+[data-theme="light"] #eventsTable tbody td:not(:last-child)::after {
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        rgba(0, 0, 0, 0.1),
+        transparent
+    );
+}
+
+/* Ensure Content Stays Within Column Boundaries */
+#eventsTable thead th,
+#eventsTable tbody td {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+}
+
+#eventsTable tbody td:nth-child(3) {
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+/* Remove any conflicting positioning */
+#eventsTable tbody tr::before {
+    display: none !important;
+}
+
+/* Clean Column Separation */
+#eventsTable thead th,
+#eventsTable tbody td {
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+}
+
+#eventsTable tbody td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-theme="light"] #eventsTable tbody td {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Simple Admin Table Text Visibility Fix */
+.admin-users-table td,
+.admin-users-table th {
+    color: var(--light-color) !important;
+}
+
+/* Dark theme table text */
+[data-theme="dark"] .admin-users-table td,
+[data-theme="dark"] .admin-users-table th {
+    color: #f8fafc !important;
+}
+
+/* Light theme table text */
+[data-theme="light"] .admin-users-table td,
+[data-theme="light"] .admin-users-table th {
+    color: #1f2937 !important;
+}
+
+/* Simple Admin Panel Table Header Fix */
+.admin-users-table thead th {
+    color: white !important;
+}
+
+/* Admin Table ID Column Styling */
+.admin-users-table tbody td:first-child {
+    text-align: center !important;
+    font-weight: 700 !important;
+    color: rgba(16, 185, 129, 0.9) !important;
+    font-family: 'JetBrains Mono', monospace !important;
+}
+
+/* Admin Table Username Column Styling */
+.admin-users-table tbody td:nth-child(2) {
+    font-weight: 600 !important;
+    color: rgba(248, 250, 252, 0.95) !important;
+}
+
+/* Remove Bootstrap Default Table Styles for Admin Panel */
+.admin-users-table.table,
+.admin-users-table.table *,
+.admin-users-table.table-striped,
+.admin-users-table.table-hover {
+    background-color: transparent !important;
+    background: transparent !important;
+    color: inherit !important;
+}
+
+/* Override Bootstrap Striped Table */
+.admin-users-table.table-striped > tbody > tr:nth-of-type(odd) > td,
+.admin-users-table.table-striped > tbody > tr:nth-of-type(odd) > th {
+    background-color: transparent !important;
+}
+
+.admin-users-table.table-striped > tbody > tr:nth-of-type(even) > td,
+.admin-users-table.table-striped > tbody > tr:nth-of-type(even) > th {
+    background-color: transparent !important;
+}
+
+/* Override Bootstrap Hover Effects */
+.admin-users-table.table-hover > tbody > tr:hover > td,
+.admin-users-table.table-hover > tbody > tr:hover > th {
+    background-color: transparent !important;
+}
+
+/* Light Theme Admin Table Styling */
+[data-theme="light"] .admin-users-table {
+    background: rgba(248, 250, 252, 0.95) !important;
+}
+
+[data-theme="light"] .admin-users-table thead {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(5, 150, 105, 0.9)) !important;
+}
+
+[data-theme="light"] .admin-users-table thead th {
+    color: white !important;
+}
+
+[data-theme="light"] .admin-users-table tbody {
+    background: rgba(248, 250, 252, 0.8) !important;
+}
+
+[data-theme="light"] .admin-users-table tbody tr {
+    background: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-theme="light"] .admin-users-table tbody tr:nth-child(even) {
+    background: rgba(248, 250, 252, 0.9) !important;
+}
+
+[data-theme="light"] .admin-users-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+    box-shadow: 
+        0 8px 25px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(16, 185, 129, 0.1) !important;
+}
+
+[data-theme="light"] .admin-users-table tbody tr:nth-child(even):hover {
+    background: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="light"] .admin-users-table tbody td {
+    color: rgba(31, 41, 55, 0.9) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .admin-users-table tbody td:first-child {
+    color: rgba(16, 185, 129, 0.9) !important;
+}
+
+[data-theme="light"] .admin-users-table tbody td:nth-child(2) {
+    color: rgba(31, 41, 55, 0.95) !important;
+}
+
+/* Enhanced Badge Styling in Admin Panel */
+.admin-users-table .badge {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    border-radius: 20px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.admin-users-table .badge.bg-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4) !important;
+}
+
+.admin-users-table .badge.bg-secondary {
+    background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+    box-shadow: 0 4px 15px rgba(107, 114, 128, 0.4) !important;
+}
+
+.admin-users-table .badge.bg-info {
+    background: linear-gradient(135deg, #06b6d4, #0891b2) !important;
+    box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4) !important;
+}
+
+/* Enhanced Action Buttons in Admin Panel */
+.admin-users-table .btn {
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.admin-users-table .btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25) !important;
+}
+
+.admin-users-table .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+}
+
+.admin-users-table .btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+}
+
+/* Admin Panel Card Styling */
+.admin-card {
+    background: rgba(30, 41, 59, 0.6) !important;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.4);
+}
+
+.admin-card .card-header {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.8), rgba(5, 150, 105, 0.8)) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+    padding: 1.5rem !important;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: white !important;
+}
+
+.admin-card .card-body {
+    background: rgba(30, 41, 59, 0.4);
+    padding: 2rem !important;
+}
+
+/* Admin Panel Form and Input Styling */
+.admin-card .form-control,
+.admin-card .form-select,
+.admin-card .form-check-input {
+    background: rgba(30, 41, 59, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: rgba(248, 250, 252, 0.9) !important;
+    border-radius: 12px !important;
+    padding: 0.75rem 1rem !important;
+    font-weight: 500 !important;
+    transition: all 0.3s ease !important;
+}
+
+.admin-card .form-control:focus,
+.admin-card .form-select:focus {
+    background: rgba(30, 41, 59, 0.8) !important;
+    border-color: rgba(59, 130, 246, 0.6) !important;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25) !important;
+    color: rgba(248, 250, 252, 0.95) !important;
+}
+
+.admin-card .form-control::placeholder {
+    color: rgba(248, 250, 252, 0.6) !important;
+}
+
+.admin-card .form-label {
+    color: rgba(248, 250, 252, 0.9) !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.admin-card .form-check-label {
+    color: rgba(248, 250, 252, 0.9) !important;
+    font-weight: 500 !important;
+}
+
+.admin-card .text-muted {
+    color: rgba(248, 250, 252, 0.6) !important;
+}
+
+/* Light Theme Admin Forms */
+[data-theme="light"] .admin-card .form-control,
+[data-theme="light"] .admin-card .form-select,
+[data-theme="light"] .admin-card .form-check-input {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(0, 0, 0, 0.15) !important;
+    color: rgba(31, 41, 55, 0.9) !important;
+}
+
+[data-theme="light"] .admin-card .form-control:focus,
+[data-theme="light"] .admin-card .form-select:focus {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-color: rgba(59, 130, 246, 0.6) !important;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25) !important;
+    color: rgba(31, 41, 55, 0.95) !important;
+}
+
+[data-theme="light"] .admin-card .form-control::placeholder {
+    color: rgba(31, 41, 55, 0.6) !important;
+}
+
+[data-theme="light"] .admin-card .form-label {
+    color: rgba(31, 41, 55, 0.9) !important;
+}
+
+[data-theme="light"] .admin-card .form-check-label {
+    color: rgba(31, 41, 55, 0.9) !important;
+}
+
+[data-theme="light"] .admin-card .text-muted {
+    color: rgba(31, 41, 55, 0.6) !important;
+}
+
+/* Admin Panel Button Enhancements */
+.admin-card .btn {
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    padding: 0.75rem 1.5rem !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
+}
+
+.admin-card .btn:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25) !important;
+}
+
+.admin-card .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+    color: white !important;
+}
+
+.admin-card .btn-warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    color: white !important;
+}
+
+/* Modal Styling for Admin Panel */
+.modal-content {
+    background: rgba(30, 41, 59, 0.95) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.modal-header {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(37, 99, 235, 0.8)) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 20px 20px 0 0 !important;
+}
+
+.modal-title {
+    color: white !important;
+    font-weight: 700 !important;
+}
+
+.modal-body {
+    background: rgba(30, 41, 59, 0.4) !important;
+    color: rgba(248, 250, 252, 0.9) !important;
+}
+
+.modal-footer {
+    background: rgba(30, 41, 59, 0.4) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 0 0 20px 20px !important;
+}
+
+/* Light Theme Modal */
+[data-theme="light"] .modal-content {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .modal-header {
+    background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+}
+
+[data-theme="light"] .modal-body {
+    background: rgba(248, 250, 252, 0.95) !important;
+    color: rgba(31, 41, 55, 0.9) !important;
+}
+
+[data-theme="light"] .modal-footer {
+    background: rgba(248, 250, 252, 0.95) !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Light Theme Admin Card */
+[data-theme="light"] .admin-card {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .admin-card .card-header {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    color: white !important;
+}
+
+[data-theme="light"] .admin-card .card-body {
+    background: rgba(248, 250, 252, 0.95);
+}
+
+/* WebSocket Status Indicators */
+#websocket-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#live-status {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.3s ease;
+    animation: pulse-success 2s ease-in-out infinite;
+}
+
+#live-status.badge.bg-success {
+    background: linear-gradient(135deg, var(--success-color), #059669) !important;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+#live-status.badge.bg-warning {
+    background: linear-gradient(135deg, var(--warning-color), #d97706) !important;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    animation: pulse-warning 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-success {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+    50% {
+        transform: scale(1.02);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.5);
+    }
+}
+
+@keyframes pulse-warning {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.6);
+    }
+}
+
+/* Enhanced System Health Indicator */
+.system-health-indicator {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.system-health-indicator:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: scale(1.02);
+}
+
+.health-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: rgba(248, 250, 252, 0.9);
+}
+
+.health-text {
+    white-space: nowrap;
+}
+
+

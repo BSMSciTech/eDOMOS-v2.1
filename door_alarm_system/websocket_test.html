@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+</head>
+<body>
+    <h1>WebSocket Test</h1>
+    <div id="status">Connecting...</div>
+    <div id="events"></div>
+    <script>
+        const socket = io('/events');
+        socket.on('connect', () => {
+            document.getElementById('status').innerHTML = 'Connected!';
+        });
+        socket.on('new_event', (data) => {
+            const div = document.createElement('div');
+            div.innerHTML = JSON.stringify(data);
+            document.getElementById('events').appendChild(div);
+        });
+    </script>
+</body>
+</html>

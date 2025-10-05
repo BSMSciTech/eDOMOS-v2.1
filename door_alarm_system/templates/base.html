@@ -80,26 +80,11 @@
                         <div class="system-health-indicator">
                             <div class="health-status" id="systemHealth">
                                 <div class="health-dot online"></div>
-                                <span class="health-text">Live Monitoring Active</span>
+                                <span class="health-text">Event-Driven Updates</span>
                             </div>
                         </div>
                     </li>
-                    <li class="nav-item me-2">
-                        <div class="auto-refresh-controls">
-                            <button class="btn btn-outline-light btn-sm" id="autoRefreshBtn" onclick="toggleAutoRefresh()" title="Toggle Auto-Refresh">
-                                <i class="fas fa-play"></i> Auto-Refresh: OFF
-                            </button>
-                            <select class="form-select form-select-sm" id="refreshIntervalSelect" onchange="setRefreshInterval(this.value)" title="Refresh Interval">
-                                <option value="1">1s</option>
-                                <option value="5">5s</option>
-                                <option value="10">10s</option>
-                                <option value="30" selected>30s</option>
-                                <option value="60">1m</option>
-                                <option value="120">2m</option>
-                                <option value="300">5m</option>
-                            </select>
-                        </div>
-                    </li>
+
                     <li class="nav-item me-3">
                         <button class="btn btn-outline-light btn-sm theme-toggle-btn" id="themeToggle" onclick="toggleTheme()">
                             <i class="fas fa-sun" id="themeIcon"></i>
@@ -204,7 +189,7 @@
     {% endif %}
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <script src="{{ url_for('static', filename='js/socket.js') }}"></script>
     
     <script>
@@ -231,155 +216,23 @@
             }
         }
         
-        // Auto-refresh functionality
-        let autoRefreshInterval = null;
-        let autoRefreshEnabled = localStorage.getItem('autoRefresh') !== 'false'; // Default to enabled
-        let refreshIntervalSeconds = parseInt(localStorage.getItem('refreshInterval')) || 30; // Default 30 seconds
-        
-        function startAutoRefresh() {
-            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
-            
-            if (autoRefreshEnabled) {
-                console.log(`🔄 Auto-refresh enabled: ${refreshIntervalSeconds}s interval`);
-                startCountdown();
-                
-                autoRefreshInterval = setInterval(() => {
-                    console.log('🔄 Auto-refreshing page...');
-                    // Smooth page refresh with loading indicator
-                    showAutoRefreshIndicator();
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 500);
-                }, refreshIntervalSeconds * 1000);
-            }
-        }
-        
-        function stopAutoRefresh() {
-            if (autoRefreshInterval) {
-                clearInterval(autoRefreshInterval);
-                autoRefreshInterval = null;
-                console.log('⏹️ Auto-refresh stopped');
-            }
-        }
-        
-        function toggleAutoRefresh() {
-            autoRefreshEnabled = !autoRefreshEnabled;
-            localStorage.setItem('autoRefresh', autoRefreshEnabled);
-            
-            if (autoRefreshEnabled) {
-                startAutoRefresh();
-            } else {
-                stopAutoRefresh();
-                if (countdownInterval) clearInterval(countdownInterval);
-            }
-            
-            updateAutoRefreshUI();
-            updateCountdownDisplay();
-        }
-        
-        function setRefreshInterval(seconds) {
-            refreshIntervalSeconds = parseInt(seconds);
-            localStorage.setItem('refreshInterval', seconds);
-            if (autoRefreshEnabled) {
-                startAutoRefresh(); // Restart with new interval
-            }
-            updateAutoRefreshUI();
-            if (refreshIntervalSeconds === 1) {
-                showNotification('Warning: 1s auto-refresh may cause high CPU/network usage and flicker.', 'warning', 5000);
-            }
-        }
-        
-        function updateAutoRefreshUI() {
-            const autoRefreshBtn = document.getElementById('autoRefreshBtn');
-            const refreshIntervalSelect = document.getElementById('refreshIntervalSelect');
-            
-            if (autoRefreshBtn) {
-                if (autoRefreshEnabled) {
-                    autoRefreshBtn.innerHTML = '<i class="fas fa-pause"></i> Auto-Refresh: ON';
-                    autoRefreshBtn.className = 'btn btn-success btn-sm';
+        // Real-time WebSocket functionality (event-driven updates)
+        function updateWebSocketStatus(connected) {
+            const statusElement = document.getElementById('live-status');
+            if (statusElement) {
+                if (connected) {
+                    statusElement.innerHTML = '<i class="fas fa-wifi"></i> Real-time';
+                    statusElement.className = 'badge bg-success';
                 } else {
-                    autoRefreshBtn.innerHTML = '<i class="fas fa-play"></i> Auto-Refresh: OFF';
-                    autoRefreshBtn.className = 'btn btn-outline-secondary btn-sm';
-                }
-            }
-            
-            if (refreshIntervalSelect) {
-                refreshIntervalSelect.value = refreshIntervalSeconds;
-            }
-        }
-        
-        // Countdown timer for auto-refresh
-        let countdownInterval = null;
-        let countdownSeconds = 0;
-        
-        function startCountdown() {
-            if (countdownInterval) clearInterval(countdownInterval);
-            if (!autoRefreshEnabled) return;
-            
-            countdownSeconds = refreshIntervalSeconds;
-            updateCountdownDisplay();
-            
-            countdownInterval = setInterval(() => {
-                countdownSeconds--;
-                updateCountdownDisplay();
-                
-                if (countdownSeconds <= 0) {
-                    clearInterval(countdownInterval);
-                    countdownSeconds = refreshIntervalSeconds;
-                }
-            }, 1000);
-        }
-        
-        function updateCountdownDisplay() {
-            const countdownElement = document.getElementById('refresh-countdown');
-            if (countdownElement) {
-                if (autoRefreshEnabled) {
-                    const minutes = Math.floor(countdownSeconds / 60);
-                    const seconds = countdownSeconds % 60;
-                    const display = minutes > 0 ? `${minutes}:${seconds.toString().padStart(2, '0')}` : `${seconds}s`;
-                    countdownElement.textContent = display;
-                    countdownElement.className = countdownSeconds <= 10 ? 'badge bg-warning' : 'badge bg-info';
-                } else {
-                    countdownElement.textContent = 'OFF';
-                    countdownElement.className = 'badge bg-secondary';
+                    statusElement.innerHTML = '<i class="fas fa-wifi"></i> Reconnecting...';
+                    statusElement.className = 'badge bg-warning';
                 }
             }
         }
         
-        function showAutoRefreshIndicator() {
-            const indicator = document.createElement('div');
-            indicator.id = 'autoRefreshIndicator';
-            indicator.innerHTML = `
-                <div class="position-fixed top-0 start-50 translate-middle-x bg-primary text-white px-3 py-2 rounded-bottom shadow" style="z-index: 9999;">
-                    <i class="fas fa-sync fa-spin me-2"></i>Auto-refreshing...
-                </div>
-            `;
-            document.body.appendChild(indicator);
-            
-            setTimeout(() => {
-                const elem = document.getElementById('autoRefreshIndicator');
-                if (elem) elem.remove();
-            }, 3000);
-        }
+
         
-        function manualRefresh() {
-            const btn = event.target.closest('button');
-            const originalContent = btn.innerHTML;
-            
-            // Show loading state
-            btn.innerHTML = '<i class="fas fa-sync fa-spin"></i>';
-            btn.disabled = true;
-            
-            // Reset countdown and refresh
-            if (autoRefreshEnabled) {
-                countdownSeconds = refreshIntervalSeconds;
-                startCountdown();
-            }
-            
-            setTimeout(() => {
-                window.location.reload();
-            }, 300);
-        }
+
         
         // Enhanced notification system
         function showNotification(message, type = 'info', duration = 3000) {
@@ -434,34 +287,6 @@
             return container;
         }
         
-        // Enhanced page visibility handling
-        let pageVisibilityTimeStart = Date.now();
-        
-        document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                pageVisibilityTimeStart = Date.now();
-                console.log('🔍 Page hidden, pausing auto-refresh');
-                if (countdownInterval) {
-                    clearInterval(countdownInterval);
-                }
-            } else {
-                const timeHidden = Date.now() - pageVisibilityTimeStart;
-                console.log(`👁️ Page visible again after ${Math.round(timeHidden/1000)}s`);
-                
-                // If page was hidden for longer than refresh interval, refresh immediately
-                if (autoRefreshEnabled && timeHidden > refreshIntervalSeconds * 1000) {
-                    console.log('🔄 Page was hidden too long, refreshing immediately');
-                    showNotification('Refreshing data after being away...', 'info', 2000);
-                    setTimeout(() => window.location.reload(), 1000);
-                } else if (autoRefreshEnabled) {
-                    // Resume countdown
-                    const remainingTime = Math.max(1, countdownSeconds - Math.floor(timeHidden/1000));
-                    countdownSeconds = remainingTime;
-                    startCountdown();
-                }
-            }
-        });
-
         // Initialize theme on page load
         document.addEventListener('DOMContentLoaded', function() {
             // Force default to light theme if no preference is saved
@@ -471,15 +296,12 @@
                 localStorage.setItem('theme', 'light');
             }
             applyTheme(savedTheme);
-            
-            // Initialize auto-refresh
-            updateAutoRefreshUI();
-            updateCountdownDisplay();
-            if (autoRefreshEnabled) {
-                startAutoRefresh();
-            }
         });
     </script>
+    
+    <!-- Socket.IO for real-time events -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="{{ url_for('static', filename='js/socket.js') }}"></script>
     
     {% block extra_js %}{% endblock %}
 </body>

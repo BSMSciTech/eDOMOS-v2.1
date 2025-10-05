@@ -16,6 +16,37 @@ function renderRecentEvents(events) {
     });
 }
 
+// Function to update WebSocket connection status
+function updateWebSocketStatus(connected) {
+    const statusElement = document.getElementById('live-status');
+    if (statusElement) {
+        if (connected) {
+            statusElement.innerHTML = '<i class="fas fa-wifi"></i> Real-time';
+            statusElement.className = 'badge bg-success';
+            statusElement.title = 'Connected - Events update automatically';
+        } else {
+            statusElement.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Reconnecting...';
+            statusElement.className = 'badge bg-warning';
+            statusElement.title = 'Attempting to reconnect...';
+        }
+    }
+    
+    // Update system health indicator
+    const healthStatus = document.getElementById('systemHealth');
+    if (healthStatus) {
+        const healthDot = healthStatus.querySelector('.health-dot');
+        const healthText = healthStatus.querySelector('.health-text');
+        
+        if (connected) {
+            if (healthDot) healthDot.className = 'health-dot online';
+            if (healthText) healthText.textContent = 'Live Monitoring Active';
+        } else {
+            if (healthDot) healthDot.className = 'health-dot warning';
+            if (healthText) healthText.textContent = 'Reconnecting...';
+        }
+    }
+}
+
 // Global socket variable and state
 let socket = null;
 let isSocketReady = false;
@@ -39,6 +70,12 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Socket ID:', socket.id);
             console.log('Socket namespace:', socket.nsp);
             isSocketReady = true;
+            
+            // Update connection status
+            updateWebSocketStatus(true);
+            
+            // Show connection notification
+            showNotification('Real-time monitoring active - Events will update automatically', 'success', 3000);
             
             // Process any queued events
             if (eventQueue.length > 0) {
@@ -67,9 +104,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        socket.on('disconnect', function() {
-            console.log('❌ Disconnected from WebSocket server');
+        socket.on('disconnect', function(reason) {
+            console.log('❌ Disconnected from WebSocket server:', reason);
             isSocketReady = false;
+            updateWebSocketStatus(false);
+            
+            // Show disconnection notification
+            showNotification('Real-time connection lost - Attempting to reconnect...', 'warning', 5000);
+            
             const statusElement = document.getElementById('connection-status');
             if (statusElement) {
                 statusElement.innerHTML = '<span class="badge bg-danger">Disconnected</span>';
@@ -78,6 +120,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         socket.on('connect_error', function(error) {
             console.error('❌ WebSocket connection error:', error);
+            updateWebSocketStatus(false);
             const statusElement = document.getElementById('connection-status');
             if (statusElement) {
                 statusElement.innerHTML = '<span class="badge bg-warning">Connection Error</span>';
@@ -86,10 +129,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         socket.on('reconnect', function(attemptNumber) {
             console.log('🔄 Reconnected to WebSocket server after', attemptNumber, 'attempts');
+            isSocketReady = true;
+            updateWebSocketStatus(true);
+            
+            // Show reconnection notification
+            showNotification('Real-time monitoring restored!', 'success', 3000);
         });
         
         socket.on('reconnect_error', function(error) {
-            console.error('🔄 Reconnection failed:', error);
+            console.error('❌ Reconnection failed:', error);
+            updateWebSocketStatus(false);
         });
     } else {
         console.error('❌ Socket.IO library not loaded');
@@ -158,12 +207,13 @@ function processEvent(data) {
             updateDashboardStats(data);
         }
         
-        // Show notification for new events
+        // Show enhanced notification for new events
         if (data.event) {
             showEventNotification(data.event);
+            console.log('📢 Event notification shown:', data.event.event_type);
         }
         
-        console.log('✅ Event processed successfully');
+        console.log('✅ Event processed successfully - Page updated in real-time');
         
     } catch (error) {
         console.error('❌ Error processing event:', error);
@@ -321,21 +371,44 @@ function animateCounterUpdate(element, newValue) {
     }
 }
 
-// Function to show event notifications
+// Enhanced notification function for events
 function showEventNotification(event) {
+    if (!event) return;
+    
+    let message = '';
+    let type = 'info';
+    
+    switch (event.event_type) {
+        case 'door_open':
+            message = `🚪 Door Opened - Monitoring timer started`;
+            type = 'warning';
+            break;
+        case 'door_close':
+            message = `🔒 Door Closed - System secured`;
+            type = 'success';
+            break;
+        case 'alarm_triggered':
+            message = `🚨 ALARM TRIGGERED - Immediate attention required!`;
+            type = 'danger';
+            break;
+        default:
+            message = `📋 ${event.event_type.replace('_', ' ').toUpperCase()} - ${event.description}`;
+    }
+    
+    showNotification(message, type, 4000);
+}
+
+// Function to show event notifications
+function showNotification(message, type, duration) {
     // Create a toast notification for new events
     if (typeof bootstrap !== 'undefined' && bootstrap.Toast) {
         const toastContainer = document.getElementById('toast-container') || createToastContainer();
         
-        const eventColor = event.event_type === 'alarm_triggered' ? 'bg-danger' :
-                          event.event_type === 'door_open' ? 'bg-warning' : 'bg-success';
-        
         const toastHtml = `
-            <div class="toast align-items-center text-white ${eventColor} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
                 <div class="d-flex">
                     <div class="toast-body">
-                        <strong>${event.event_type.replace('_', ' ').toUpperCase()}</strong><br>
-                        ${event.description}
+                        ${message}
                     </div>
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
@@ -344,7 +417,7 @@ function showEventNotification(event) {
         
         toastContainer.insertAdjacentHTML('beforeend', toastHtml);
         const toastElement = toastContainer.lastElementChild;
-        const toast = new bootstrap.Toast(toastElement, { delay: 5000 });
+        const toast = new bootstrap.Toast(toastElement, { delay: duration });
         toast.show();
         
         // Remove toast after it's hidden
@@ -353,7 +426,7 @@ function showEventNotification(event) {
         });
     } else {
         // Fallback notification
-        console.log('📢 New Event:', event.event_type, '-', event.description);
+        console.log('📢 Notification:', message);
     }
 }
 

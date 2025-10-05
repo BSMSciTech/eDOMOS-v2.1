@@ -7,7 +7,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, date
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session, send_file, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, send_file, flash, render_template_string
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_socketio import SocketIO, emit
 from flask_wtf import FlaskForm
@@ -46,6 +46,12 @@ alarm_active = False
 timer_thread = None
 timer_active = False
 timer_duration = 30  # Default 30 seconds
+
+# Duplicate prevention variables
+last_logged_door_state = None
+last_logged_alarm_state = False
+last_event_timestamps = {}
+event_lock = threading.Lock()
 
 # Initialize system
 def init_system():
@@ -104,6 +110,9 @@ def monitor_door():
             door_open = False
             alarm_active = False
             timer_active = False
+            # Reset alarm state for duplicate prevention
+            global last_logged_alarm_state
+            last_logged_alarm_state = False
             if not os.environ.get('TESTING'):
                 GPIO.output(13, GPIO.LOW)
                 GPIO.output(16, GPIO.LOW)
@@ -151,7 +160,39 @@ def alarm_timer(duration):
 
 def log_event(event_type, description):
     from pytz import timezone
-    global door_open, alarm_active
+    global door_open, alarm_active, last_logged_door_state, last_logged_alarm_state, last_event_timestamps
+    
+    # Duplicate prevention logic
+    with event_lock:
+        current_time = time.time()
+        event_key = f"{event_type}_{description}"
+        
+        # Time-based duplicate prevention (within 100ms)
+        if event_key in last_event_timestamps:
+            if current_time - last_event_timestamps[event_key] < 0.1:
+                print(f"[DEBUG] Duplicate event prevented: {event_type} (too soon)")
+                return
+        
+        # State-based duplicate prevention
+        if event_type == 'door_open':
+            if last_logged_door_state is True:
+                print(f"[DEBUG] Duplicate door_open prevented")
+                return
+            last_logged_door_state = True
+        elif event_type == 'door_close':
+            if last_logged_door_state is False:
+                print(f"[DEBUG] Duplicate door_close prevented")
+                return
+            last_logged_door_state = False
+        elif event_type == 'alarm_triggered':
+            if last_logged_alarm_state is True:
+                print(f"[DEBUG] Duplicate alarm_triggered prevented")
+                return
+            last_logged_alarm_state = True
+        
+        # Update timestamp
+        last_event_timestamps[event_key] = current_time
+    
     with app.app_context():
         # Convert timestamp to IST
         ist = timezone('Asia/Kolkata')
@@ -266,7 +307,7 @@ Advanced Door Security & Monitoring Systems
 # Flask-Login user loader
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.get(User, int(user_id))
+    return User.query.get(int(user_id))
 
 # Forms
 class LoginForm(FlaskForm):
@@ -951,6 +992,101 @@ def generate_report():
         print(f"Report Generation Error: {str(e)}")
         return jsonify({'error': f'Report generation failed: {str(e)}'}), 500
 
+# Simple test route for manual door event testing (remove in production)
+@app.route('/trigger-door-open')
+def trigger_door_open():
+    """Simple test route to trigger door open event"""
+    log_event('door_open', 'Manual test door opened')
+    return "Door open event triggered! Check your dashboard."
+
+@app.route('/trigger-door-close') 
+def trigger_door_close():
+    """Simple test route to trigger door close event"""
+    log_event('door_close', 'Manual test door closed')
+    return "Door close event triggered! Check your dashboard."
+
+@app.route('/trigger-alarm')
+def trigger_alarm():
+    """Simple test route to trigger alarm event"""
+    log_event('alarm_triggered', 'Manual test alarm triggered after 30 seconds')
+    return "Alarm event triggered! Check your dashboard."
+
+@app.route('/test-websocket')
+def test_websocket():
+    """Test WebSocket connection without authentication"""
+    return render_template_string('''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test - eDOMOS</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .connected { background: #d4edda; color: #155724; }
+        .disconnected { background: #f8d7da; color: #721c24; }
+        .event { background: #d1ecf1; color: #0c5460; padding: 8px; margin: 5px 0; border-radius: 3px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Test - eDOMOS v2</h1>
+    <div id="status" class="status disconnected">Connecting...</div>
+    
+    <h3>Test Controls:</h3>
+    <button onclick="triggerDoorOpen()">Trigger Door Open</button>
+    <button onclick="triggerDoorClose()">Trigger Door Close</button>
+    
+    <h3>Events:</h3>
+    <div id="events"></div>
+    
+    <script>
+        console.log('🚀 Initializing WebSocket test...');
+        const socket = io('/events', {
+            transports: ['websocket', 'polling'],
+            reconnection: true
+        });
+        
+        socket.on('connect', () => {
+            console.log('✅ Connected to WebSocket server');
+            const status = document.getElementById('status');
+            status.innerHTML = 'Connected! Socket ID: ' + socket.id;
+            status.className = 'status connected';
+        });
+        
+        socket.on('disconnect', (reason) => {
+            console.log('❌ Disconnected:', reason);
+            const status = document.getElementById('status');
+            status.innerHTML = 'Disconnected: ' + reason;
+            status.className = 'status disconnected';
+        });
+        
+        socket.on('new_event', (data) => {
+            console.log('📡 Received event:', data);
+            const div = document.createElement('div');
+            div.className = 'event';
+            div.innerHTML = '<strong>' + new Date().toLocaleTimeString() + '</strong> - ' + JSON.stringify(data, null, 2);
+            document.getElementById('events').appendChild(div);
+        });
+        
+        function triggerDoorOpen() {
+            fetch('/trigger-door-open')
+                .then(response => response.text())
+                .then(data => console.log('Door open triggered:', data))
+                .catch(error => console.error('Error:', error));
+        }
+        
+        function triggerDoorClose() {
+            fetch('/trigger-door-close')
+                .then(response => response.text())
+                .then(data => console.log('Door close triggered:', data))
+                .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>
+    ''')
+
 # Test route for triggering events (for debugging)
 @app.route('/api/test-event', methods=['POST'])
 @login_required
@@ -963,22 +1099,42 @@ def test_event():
         return jsonify({'success': True, 'message': 'Test event triggered'})
     return jsonify({'error': 'Permission denied'}), 403
 
+@app.route('/websocket_test.html')
+def websocket_test():
+    """Serve WebSocket test page"""
+    from flask import send_from_directory
+    return send_from_directory('.', 'websocket_test.html')
+
 # WebSocket events
 @socketio.on('connect', namespace='/events')
 def handle_connect():
-    print('Client connected to WebSocket')
+    print(f'✅ WebSocket client connected: {request.sid}')
+    print(f'📡 Total clients connected: {len(socketio.server.manager.rooms.get("/events", {}))}')
 
 @socketio.on('disconnect', namespace='/events')
 def handle_disconnect():
-    print('Client disconnected from WebSocket')
+    print(f'❌ WebSocket client disconnected: {request.sid}')
 
 # Start door monitoring in a separate thread
+monitor_thread_started = False
+monitor_thread_lock = threading.Lock()
+
 def start_monitoring():
-    monitor_thread = threading.Thread(target=monitor_door)
-    monitor_thread.daemon = True
-    monitor_thread.start()
+    global monitor_thread_started
+    with monitor_thread_lock:
+        if not monitor_thread_started:
+            monitor_thread = threading.Thread(target=monitor_door, name="DoorMonitor")
+            monitor_thread.daemon = True
+            monitor_thread.start()
+            monitor_thread_started = True
+            print("🔍 Door monitoring thread started")
+        else:
+            print("⚠️ Door monitoring thread already running")
 
 if __name__ == '__main__':
+    print("🚀 Starting eDOMOS-v2 Door Alarm System...")
+    print("📡 WebSocket support enabled")
+    print("🔄 Event-driven real-time updates active")
     init_system()
     start_monitoring()
     socketio.run(app, host='0.0.0.0', port=5000, debug=False)

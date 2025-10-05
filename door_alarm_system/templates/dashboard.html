@@ -13,13 +13,12 @@
         <div class="col-md-4 text-end">
             <div class="status-indicators">
                 <div class="d-flex align-items-center">
-                    <span class="me-2">Next Refresh:</span>
-                    <div id="refresh-status" class="me-2">
-                        <span class="badge bg-info" id="refresh-countdown">30s</span>
+                    <span class="me-2">Live Updates:</span>
+                    <div id="websocket-status" class="me-2">
+                        <span class="badge bg-success" id="live-status">
+                            <i class="fas fa-wifi"></i> Real-time
+                        </span>
                     </div>
-                    <button class="btn btn-outline-primary btn-sm" onclick="manualRefresh()" title="Refresh Now">
-                        <i class="fas fa-sync"></i>
-                    </button>
                 </div>
             </div>
         </div>
